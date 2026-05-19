@@ -73,7 +73,13 @@ exports.getPosts = async (req, res) => {
             .populate("community", "name slug")
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(Number(limit));
+            .limit(Number(limit))
+            .lean();
+
+        // ADD KARMA BEFORE SENDING RESPONSE
+        posts.forEach(p => {
+            p.karma = p.upvotes.length - p.downvotes.length;
+        });
 
         res.json({
             success: true,

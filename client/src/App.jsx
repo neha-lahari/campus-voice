@@ -8,15 +8,17 @@ import MainPage from "./pages/MainPage";
 // TEMP DASHBOARD (you can remove later)
 function Dashboard() {
   return (
-    <div style={{
-      height: "100vh",
-      background: "#020810",
-      color: "#39ff64",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontFamily: "monospace"
-    }}>
+    <div
+      style={{
+        height: "100vh",
+        background: "#020810",
+        color: "#39ff64",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: "monospace",
+      }}
+    >
       DASHBOARD (TEMP)
     </div>
   );
@@ -33,9 +35,9 @@ function App() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/login" element={<Login />} />
 
-      {/* main page after login/signup */}
+      {/* MAIN APP (ALL /main routes inside MainPage) */}
       <Route
-        path="/main"
+        path="/main/*"
         element={
           <ProtectedRoute>
             <MainPage />
@@ -43,7 +45,7 @@ function App() {
         }
       />
 
-      {/* optional dashboard (you can delete later) */}
+      {/* dashboard optional */}
       <Route
         path="/dashboard"
         element={
