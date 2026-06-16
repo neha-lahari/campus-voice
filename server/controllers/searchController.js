@@ -1,154 +1,72 @@
 const Post = require("../models/postModel");
 const User = require("../models/userModel");
 const Community = require("../models/communityModel");
-const Notice = require("../models/noticeModel");
-
-
-
-// =======================================
-// GLOBAL SEARCH
-// =======================================
 
 const globalSearch = async (req, res) => {
-
     try {
+        const { q = "", page = 1, limit = 10, sort = "new" } = req.query;
 
-        const {
-            query,
-            page = 1,
-            limit = 10,
-            sort = "new"
-        } = req.query;
+        if (!q.trim()) {
+            return res.json({ posts: [], users: [], communities: [] });
+        }
 
         const skip = (page - 1) * limit;
 
-        let sortOption = {};
+        const sortOption = sort === "old"
+            ? { createdAt: 1 }
+            : { createdAt: -1 };
 
-
-
-        // SORTING
-
-        if (sort === "new") {
-            sortOption = { createdAt: -1 };
-        }
-
-        if (sort === "old") {
-            sortOption = { createdAt: 1 };
-        }
-
-
-
-        // =======================================
-        // SEARCH POSTS
-        // =======================================
-
+        // ======================
+        // POSTS (FIXED: body not content)
+        // ======================
         const posts = await Post.find({
             $or: [
-                {
-                    title: {
-                        $regex: query,
-                        $options: "i"
-                    }
-                },
-                {
-                    content: {
-                        $regex: query,
-                        $options: "i"
-                    }
-                }
+                { title: { $regex: q, $options: "i" } },
+                { body: { $regex: q, $options: "i" } }
             ]
         })
             .populate("author", "name avatar")
             .sort(sortOption)
-            .skip(skip)
-            .limit(Number(limit));
+            .limit(Number(limit))
+            .skip(skip);
 
-
-
-        // =======================================
-        // SEARCH USERS
-        // =======================================
-
+        // ======================
+        // USERS
+        // ======================
         const users = await User.find({
             $or: [
-                {
-                    name: {
-                        $regex: query,
-                        $options: "i"
-                    }
-                },
-                {
-                    rollNumber: {
-                        $regex: query,
-                        $options: "i"
-                    }
-                }
+                { name: { $regex: q, $options: "i" } },
+                { rollNumber: { $regex: q, $options: "i" } }
             ]
-        })
-            .select("name avatar karma department batch");
+        }).select("name avatar karma department batch rollNumber");
 
-
-
-        // =======================================
-        // SEARCH COMMUNITIES
-        // =======================================
-
-        const communities = await Community.find({
-            name: {
-                $regex: query,
-                $options: "i"
-            }
-        })
-            .skip(skip)
-            .limit(Number(limit));
-
-
-
-        // =======================================
-        // SEARCH NOTICES
-        // =======================================
-
-        const notices = await Notice.find({
+        // ======================
+        // COMMUNITIES (FIXED + memberCount added)
+        // ======================
+        const communitiesRaw = await Community.find({
             $or: [
-                {
-                    title: {
-                        $regex: query,
-                        $options: "i"
-                    }
-                },
-                {
-                    content: {
-                        $regex: query,
-                        $options: "i"
-                    }
-                }
+                { name: { $regex: q, $options: "i" } },
+                { slug: { $regex: q, $options: "i" } }
             ]
-        })
-            .sort(sortOption)
-            .skip(skip)
-            .limit(Number(limit));
+        }).limit(Number(limit));
 
+        const communities = communitiesRaw.map(c => ({
+            _id: c._id,
+            name: c.name,
+            slug: c.slug,
+            memberCount: c.members?.length || 0
+        }));
 
-
-        res.status(200).json({
+        return res.status(200).json({
             posts,
             users,
-            communities,
-            notices
+            communities
         });
 
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message
-        });
-
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: err.message });
     }
-
 };
 
-
-
-module.exports = {
-    globalSearch
-};
+module.exports = { globalSearch };

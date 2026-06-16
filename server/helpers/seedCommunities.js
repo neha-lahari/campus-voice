@@ -1,64 +1,98 @@
-require("dotenv").config();
 const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+
 const Community = require("../models/communityModel");
+
+dotenv.config();
+
+mongoose.connect(process.env.MONGO_URI);
 
 const communities = [
     {
         name: "Doubt Clearing",
         slug: "doubt-clearing",
-        description: "Ask and solve academic doubts",
+        description: "Ask academic doubts",
+        type: "predefined",
+        members: [],
+        moderators: []
     },
     {
         name: "Placements",
         slug: "placements",
-        description: "Placement updates and interview prep",
+        description: "Placement discussions",
+        type: "predefined",
+        members: [],
+        moderators: []
     },
     {
         name: "Hostel",
         slug: "hostel",
-        description: "Hostel life discussions",
+        description: "Hostel discussions",
+        type: "predefined",
+        members: [],
+        moderators: []
     },
     {
         name: "Lost & Found",
         slug: "lost-found",
-        description: "Lost and found items",
+        description: "Lost items in campus",
+        type: "predefined",
+        members: [],
+        moderators: []
     },
     {
         name: "Professor Reviews",
         slug: "professor-reviews",
-        description: "Rate and review professors",
+        description: "Review professors",
+        type: "predefined",
+        members: [],
+        moderators: []
     },
     {
         name: "Events",
         slug: "events",
-        description: "College events and fests",
+        description: "Campus events",
+        type: "predefined",
+        members: [],
+        moderators: []
     },
     {
         name: "Teammate Finder",
         slug: "teammate-finder",
-        description: "Find teammates for projects",
+        description: "Find teammates",
+        type: "predefined",
+        members: [],
+        moderators: []
     },
     {
         name: "Memes",
         slug: "memes",
-        description: "College memes ",
-    },
+        description: "Campus memes",
+        type: "predefined",
+        members: [],
+        moderators: []
+    }
 ];
 
-const seed = async () => {
+const seedCommunities = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI);
 
+        // remove old communities
         await Community.deleteMany();
+
+        // insert new ones
         await Community.insertMany(communities);
 
-        console.log("✅ Communities seeded successfully");
+        console.log("Communities Seeded");
 
         process.exit();
+
     } catch (err) {
-        console.error("Error:", err);
+
+        console.error(err);
+
         process.exit(1);
     }
 };
 
-seed();
+seedCommunities();

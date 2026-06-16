@@ -4,7 +4,8 @@ const jwt = require("jsonwebtoken");
 const validator = require("validator");
 const parseRollNumber = require("../helpers/parseRollnumber");
 
-// ================= TOKEN =================
+const getBadges = require("../helpers/getBadges");// remove thissssss
+
 const generateToken = (user) => {
     return jwt.sign(
         {
@@ -18,12 +19,33 @@ const generateToken = (user) => {
     );
 };
 
-// ================= SIGNUP =================
+
+const getLeaderboard = async (req, res) => { //// removeeeee
+
+    try {
+
+        const users = await User.find()
+            .select("name karma avatar")
+            .sort({ karma: -1 })
+            .limit(10);
+
+        res.json(users);
+
+    } catch (err) {
+
+        res.status(500).json({
+            message: err.message
+        });
+
+    }
+};
+
+
 const signup = async (req, res) => {
     try {
+
         const { name, email, password, rollNumber } = req.body;
 
-        // basic validation
         if (!name || !email || !password || !rollNumber) {
             return res.status(400).json({
                 success: false,
@@ -31,7 +53,6 @@ const signup = async (req, res) => {
             });
         }
 
-        // email validation
         if (!validator.isEmail(email)) {
             return res.status(400).json({
                 success: false,
@@ -39,7 +60,6 @@ const signup = async (req, res) => {
             });
         }
 
-        // roll number parsing
         const parsed = parseRollNumber(rollNumber);
 
         if (!parsed) {
@@ -49,7 +69,6 @@ const signup = async (req, res) => {
             });
         }
 
-        // check existing user
         const existing = await User.findOne({
             $or: [{ email }, { rollNumber }]
         });
@@ -61,10 +80,8 @@ const signup = async (req, res) => {
             });
         }
 
-        // hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // create user
         const user = await User.create({
             name,
             email,
@@ -83,6 +100,7 @@ const signup = async (req, res) => {
         });
 
     } catch (err) {
+
         res.status(500).json({
             success: false,
             message: err.message
@@ -93,6 +111,7 @@ const signup = async (req, res) => {
 // ================= LOGIN =================
 const login = async (req, res) => {
     try {
+
         const { identifier, password } = req.body;
 
         if (!identifier || !password) {
@@ -134,6 +153,7 @@ const login = async (req, res) => {
         });
 
     } catch (err) {
+
         res.status(500).json({
             success: false,
             message: err.message
@@ -143,14 +163,17 @@ const login = async (req, res) => {
 
 // ================= VERIFY =================
 const verifyUser = async (req, res) => {
+
     res.json({
         success: true,
         user: req.user
     });
 };
 
+// ================= EXPORTS =================
 module.exports = {
     signup,
     login,
-    verifyUser
+    verifyUser,
+    getLeaderboard
 };

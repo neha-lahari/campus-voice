@@ -1,244 +1,260 @@
-import { upvote, downvote } from "../api/postApi";
-import { useState } from "react";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
 
-export default function PostCard({ post }) {
-    const [karma, setKarma] = useState(post.karma);
-    const [voted, setVoted] = useState(null); // 'up' | 'down' | null
-    const [loading, setLoading] = useState(false);
-    const [bump, setBump] = useState(false);
+import api from '../utils/api';
 
-    const triggerBump = () => {
-        setBump(false);
-        setTimeout(() => setBump(true), 10);
-    };
+const THEME = {
+    bgMain: '#060A13',
+    bgCard: '#121824',
+    accentPrimary: '#A3FF12',
+    accentSecondary: '#00F0FF',
+    textMain: '#E5E9F0',
+    textMuted: '#4E5D78',
+    alertRed: '#FF4444',
+};
 
-    const handleUpvote = async () => {
-        if (loading) return;
-        setLoading(true);
+// Interface flair configurations mapped to design tokens
+const flairStyles = {
+    Doubt: 'border-rgba(255,68,68,0.3) text-[#ff4444] bg-[rgba(255,68,68,0.05)]',
+    Resource: 'border-[rgba(0,240,255,0.3)] text-[#00F0FF] bg-[rgba(0,240,255,0.05)]',
+    Announcement: 'border-[rgba(163,255,12,0.3)] text-[#A3FF12] bg-[rgba(163,255,12,0.05)]',
+    Meme: 'border-purple-500/30 text-purple-400 bg-purple-500/5',
+    News: 'border-amber-500/30 text-amber-400 bg-amber-500/5',
+};
+
+export default function PostCard({ post, currentUserId }) {
+    const navigate = useNavigate();
+
+    const [voteCount, setVoteCount] = useState(//tmrwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+        post.upvotes.length - post.downvotes.length
+    );
+
+    const [userVote, setUserVote] = useState(
+        post.upvotes.includes(currentUserId)
+            ? 'up'
+            : post.downvotes.includes(currentUserId)
+                ? 'down'
+                : null
+    );
+
+    const [saved, setSaved] = useState(false);
+
+    const handleVote = async (type, e) => {
+        e.stopPropagation();
         try {
-            const res = await upvote(post._id);
-            setKarma(res.data.karma);
-            setVoted((v) => (v === "up" ? null : "up"));
-            triggerBump();
+            const res = await api.post(`/posts/${post._id}/vote`, { type });
+            setVoteCount(res.data.voteCount);
+            setUserVote(res.data.userVote);
         } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
+            console.error('Vote failed', err);
         }
     };
 
-    const handleDownvote = async () => {
-        if (loading) return;
-        setLoading(true);
+    const handleSave = async (e) => {
+        e.stopPropagation();
         try {
-            const res = await downvote(post._id);
-            setKarma(res.data.karma);
-            setVoted((v) => (v === "down" ? null : "down"));
-            triggerBump();
+            const res = await api.post(`/posts/${post._id}/save`);
+            setSaved(res.data.saved);
         } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
+            console.error('Save failed', err);
         }
     };
 
-    const isAnon = post.isAnonymous;
-    const initials = isAnon
-        ? "??"
-        : post.author?.username?.slice(0, 2).toUpperCase() || "??";
+    const authorName = post.isAnonymous ? 'Anonymous' : post.author?.name;
 
-    const timeAgo = (date) => {
-        const diff = Math.floor((Date.now() - new Date(date)) / 60000);
-        if (diff < 60) return `${diff}M AGO`;
-        if (diff < 1440) return `${Math.floor(diff / 60)}H AGO`;
-        return `${Math.floor(diff / 1440)}D AGO`;
-    };
+    const timeAgo = formatDistanceToNow(new Date(post.createdAt), { addSuffix: true });
+
+    const flairClass = flairStyles[post.flair] || 'border-zinc-700 text-zinc-400 bg-zinc-800/20';
 
     return (
-        <div
-            className="relative mb-4 transition-all duration-300 group"
-            style={{
-                background: "linear-gradient(145deg, rgba(2,15,28,0.97), rgba(1,10,18,0.99))",
-                border: `1px solid rgba(57,255,100,0.15)`,
-                clipPath: "polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%)",
-            }}
-            onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(57,255,100,0.3)";
-                e.currentTarget.style.boxShadow = "0 0 30px rgba(57,255,100,0.06)";
-            }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "rgba(57,255,100,0.15)";
-                e.currentTarget.style.boxShadow = "none";
-            }}
-        >
-            {/* Loading sweep bar */}
-            {loading && (
-                <div
-                    className="absolute top-0 left-0 right-0 h-[2px] opacity-70"
-                    style={{
-                        background: "linear-gradient(90deg, transparent, #39ff64, transparent)",
-                        animation: "loadSweep 0.6s ease",
-                    }}
-                />
-            )}
+        <>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Share+Tech+Mono&display=swap');
+                
+                .terminal-card {
+                    background: ${THEME.bgCard};
+                    border: 1px solid rgba(0, 240, 255, 0.12);
+                    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .terminal-card:hover {
+                    border-color: rgba(0, 240, 255, 0.35);
+                    box-shadow: 0 0 25px rgba(0, 240, 255, 0.04);
+                    transform: translateY(-1px);
+                }
+                .meta-link:hover {
+                    color: ${THEME.accentSecondary} !important;
+                    text-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+                }
+                .action-trigger {
+                    transition: all 0.15s ease;
+                }
+                .action-trigger:hover {
+                    color: ${THEME.textMain} !important;
+                }
+            `}</style>
 
-            {/* Left accent bar */}
             <div
-                className="absolute top-0 left-0 w-[3px] h-full opacity-35 group-hover:opacity-100 transition-opacity duration-300"
-                style={{ background: "linear-gradient(to bottom, #39ff64, transparent)" }}
-            />
+                onClick={() => navigate(`/post/${post._id}`)}
+                className="terminal-card p-5 mb-4 cursor-pointer"
+            >
+                {/* TOP META DATA BLOCK */}
+                <div
+                    className="flex items-center gap-2 text-[11px] mb-2.5 flex-wrap tracking-wider"
+                    style={{ fontFamily: "'Share Tech Mono', monospace", color: THEME.textMuted }}
+                >
+                    <Link
+                        to={`/r/${post.community?.name}`}
+                        onClick={e => e.stopPropagation()}
+                        className="meta-link font-bold transition-colors"
+                        style={{ color: THEME.accentSecondary }}
+                    >
+                        r/{post.community?.name}
+                    </Link>
 
-            <div className="px-6 py-5">
+                    <span>//</span>
 
-                {/* META ROW */}
-                <div className="flex items-center gap-3 mb-3 flex-wrap">
-                    {/* Avatar */}
-                    <div
-                        className="w-[34px] h-[34px] flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                        style={{
-                            fontFamily: "'Orbitron', monospace",
-                            clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                            background: isAnon ? "rgba(0,200,255,0.06)" : "rgba(57,255,100,0.08)",
-                            border: `1px solid ${isAnon ? "rgba(0,200,255,0.3)" : "rgba(57,255,100,0.3)"}`,
-                            color: isAnon ? "rgba(0,200,255,0.7)" : "#39ff64",
-                        }}
-                    >{initials}</div>
+                    <span>POSTED BY: {authorName.toUpperCase()}</span>
 
-                    {/* Author */}
-                    <span
-                        className="text-[12px] tracking-wider"
-                        style={{
-                            fontFamily: "'Share Tech Mono', monospace",
-                            color: isAnon ? "rgba(0,200,255,0.5)" : "rgba(57,255,100,0.7)",
-                        }}
-                    >{isAnon ? "ANONYMOUS" : post.author?.username?.toUpperCase()}</span>
+                    <span>//</span>
 
-                    {/* Flair */}
-                    {post.flair && (
+                    <span>{timeAgo.toUpperCase()}</span>
+
+                    {post.isSolved && (///remove thisssssssssssssssssssssssssssssssssssssss
                         <span
-                            className="text-[9px] px-2 py-[2px] tracking-wider"
+                            className="ml-auto border px-2 py-0.5 text-[10px] font-bold tracking-widest"
                             style={{
-                                fontFamily: "'Share Tech Mono', monospace",
-                                color: "rgba(0,200,255,0.7)",
-                                border: "1px solid rgba(0,200,255,0.25)",
-                                background: "rgba(0,200,255,0.05)",
+                                color: THEME.accentPrimary,
+                                borderColor: 'rgba(163, 255, 12, 0.25)',
+                                background: 'rgba(163, 255, 12, 0.03)'
                             }}
-                        >{post.flair.toUpperCase()}</span>
+                        >
+                            ✓ SOLVED
+                        </span>
                     )}
-
-                    {/* Timestamp */}
-                    <span
-                        className="ml-auto text-[10px] tracking-wider"
-                        style={{ fontFamily: "'Share Tech Mono', monospace", color: "rgba(100,160,110,0.3)" }}
-                    >{timeAgo(post.createdAt)}</span>
                 </div>
 
-                {/* TITLE */}
-                <h2
-                    className="text-sm font-bold mb-2 leading-snug tracking-wide"
-                    style={{ fontFamily: "'Orbitron', monospace", color: "#d4f5dc" }}
-                >{post.title}</h2>
+                {/* TITLE & FLAIR CONTAINER */}
+                <div className="flex items-start gap-3 mb-2.5">
+                    <h3
+                        className="flex-1 text-[14px] font-semibold leading-snug tracking-wide"
+                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: THEME.textMain }}
+                    >
+                        {post.title}
+                    </h3>
 
-                {/* BODY */}
-                <p
-                    className="text-sm leading-relaxed mb-4"
-                    style={{
-                        fontFamily: "'Rajdhani', sans-serif",
-                        fontWeight: 300,
-                        color: "rgba(150,200,160,0.55)",
-                        letterSpacing: "0.3px",
-                    }}
-                >{post.body}</p>
+                    {post.flair && (
+                        <span className={`text-[10px] font-mono font-bold tracking-widest px-2 py-0.5 border whitespace-nowrap uppercase ${flairClass}`}>
+                            {post.flair}
+                        </span>
+                    )}
+                </div>
 
-                {/* FOOTER */}
-                <div
-                    className="flex items-center gap-4 pt-3"
-                    style={{ borderTop: "1px solid rgba(57,255,100,0.07)" }}
-                >
-                    {/* Karma cluster */}
-                    <div className="flex items-center">
-                        {/* Upvote */}
-                        <button
-                            onClick={handleUpvote}
-                            disabled={loading}
-                            className="w-8 h-8 flex items-center justify-center text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                {/* BODY CONTENT TEXT */}
+                {post.body && (
+                    <p
+                        className="text-xs leading-relaxed mb-3.5 line-clamp-2"
+                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: 'rgba(229, 233, 240, 0.7)' }}
+                    >
+                        {post.body}
+                    </p>
+                )}
+
+                {/* FILE ATTACHMENTS & INTERFACE LINKS */}
+                {post.link && (
+                    <a
+                        href={post.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-mono mb-3.5 break-all tracking-wide"
+                        style={{ color: THEME.accentSecondary }}
+                    >
+                        <span className="text-[9px]">⧉</span> LINK: {post.link}
+                    </a>
+                )}
+
+                {/* IMAGE SYSTEM VIEWPORT */}
+                {post.attachments?.length > 0 && post.attachments[0].fileType === "image" && (
+                    <div className="relative mb-3.5 border border-zinc-800 overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}>
+                        <img
+                            src={post.attachments[0].url}
+                            alt="Visual Attachment"
+                            className="w-full max-h-64 object-cover opacity-85 hover:opacity-100 transition-opacity duration-200"
+                        />
+                    </div>
+                )}
+
+                {/* PDF SYSTEM VIEWPORT */}
+                {post.attachments?.length > 0 &&
+                    post.attachments[0].fileType === "pdf" && (
+                        <a
+                            href={post.attachments[0].url}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="mb-3.5 text-[11px] font-mono border rounded-sm px-3 py-1.5 inline-flex items-center gap-2 tracking-wider hover:opacity-80 transition-opacity cursor-pointer"
                             style={{
-                                fontFamily: "'Share Tech Mono', monospace",
-                                background: voted === "up" ? "rgba(57,255,100,0.1)" : "transparent",
-                                border: `1px solid ${voted === "up" ? "rgba(57,255,100,0.6)" : "rgba(57,255,100,0.15)"}`,
-                                borderRight: "none",
-                                color: voted === "up" ? "#39ff64" : "rgba(57,255,100,0.35)",
-                                clipPath: "polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%)",
-                                boxShadow: voted === "up" ? "0 0 12px rgba(57,255,100,0.2)" : "none",
+                                color: THEME.accentSecondary,
+                                borderColor: 'rgba(0, 240, 255, 0.15)',
+                                background: 'rgba(0, 240, 255, 0.02)'
                             }}
-                        >▲</button>
+                        >
+                            <span>📄</span> DOCUMENT_ATTACHED.PDF
+                        </a>
+                    )
+                }
 
-                        {/* Karma value */}
+                {/* FOOTER ACTIONS AREA */}
+                <div className="flex items-center gap-4 mt-2" style={{ fontFamily: "'Share Tech Mono', monospace" }}>
+
+                    {/* CORE VOTING CONTROLLER */}
+                    <div className="flex items-center gap-1.5 bg-[rgba(18,24,36,0.6)] border border-zinc-800/80 px-2.5 py-0.5">
+                        <button
+                            onClick={e => handleVote('up', e)}
+                            className="action-trigger text-xs p-1 bg-transparent border-none cursor-pointer flex items-center justify-center"
+                            style={{ color: userVote === 'up' ? THEME.accentPrimary : THEME.textMuted }}
+                        >
+                            ▲
+                        </button>
+
                         <span
-                            className="min-w-[44px] h-8 flex items-center justify-center text-[13px] font-bold tracking-wider"
+                            className="text-xs font-bold min-w-[18px] text-center"
                             style={{
-                                fontFamily: "'Orbitron', monospace",
-                                color: karma < 0 ? "rgba(255,80,80,0.8)" : "#39ff64",
-                                background: "rgba(57,255,100,0.05)",
-                                borderTop: "1px solid rgba(57,255,100,0.15)",
-                                borderBottom: "1px solid rgba(57,255,100,0.15)",
-                                textShadow: karma < 0
-                                    ? "0 0 12px rgba(255,80,80,0.4)"
-                                    : "0 0 12px rgba(57,255,100,0.5)",
-                                animation: bump ? "karmaBump 0.3s ease" : "none",
+                                color: userVote === 'up' ? THEME.accentPrimary : userVote === 'down' ? THEME.alertRed : THEME.textMain
                             }}
-                        >{karma}</span>
+                        >
+                            {voteCount > 0 ? `+${voteCount}` : voteCount}
+                        </span>
 
-                        {/* Downvote */}
                         <button
-                            onClick={handleDownvote}
-                            disabled={loading}
-                            className="w-8 h-8 flex items-center justify-center text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                            style={{
-                                fontFamily: "'Share Tech Mono', monospace",
-                                background: voted === "down" ? "rgba(255,80,80,0.06)" : "transparent",
-                                border: `1px solid ${voted === "down" ? "rgba(255,80,80,0.4)" : "rgba(57,255,100,0.15)"}`,
-                                borderLeft: "none",
-                                color: voted === "down" ? "rgba(255,80,80,0.8)" : "rgba(57,255,100,0.35)",
-                                clipPath: "polygon(0 6px, 6px 0, 100% 0, 100% 100%, 0 100%)",
-                                boxShadow: voted === "down" ? "0 0 12px rgba(255,80,80,0.15)" : "none",
-                            }}
-                        >▼</button>
+                            onClick={e => handleVote('down', e)}
+                            className="action-trigger text-xs p-1 bg-transparent border-none cursor-pointer flex items-center justify-center"
+                            style={{ color: userVote === 'down' ? THEME.alertRed : THEME.textMuted }}
+                        >
+                            ▼
+                        </button>
                     </div>
 
-                    {/* Replies */}
+                    {/* COMMENTS FEED COUNT */}
+                    <div className="flex items-center gap-1.5 text-xs" style={{ color: THEME.textMuted }}>
+                        <span className="text-[10px]">⌸</span>
+                        <span>{post.commentCount || 0} COMMENTS</span>
+                    </div>
+
+                    {/* DIRECTORY SAVE MODULE */}
                     <button
-                        className="flex items-center gap-1 text-[11px] tracking-wider transition-colors duration-200"
-                        style={{
-                            fontFamily: "'Share Tech Mono', monospace",
-                            color: "rgba(57,255,100,0.25)",
-                            background: "none", border: "none", cursor: "pointer", padding: 0,
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = "rgba(57,255,100,0.7)"}
-                        onMouseLeave={(e) => e.currentTarget.style.color = "rgba(57,255,100,0.25)"}
+                        onClick={handleSave}
+                        className="action-trigger ml-auto bg-transparent border-none text-xs font-bold tracking-widest cursor-pointer flex items-center gap-1 uppercase"
+                        style={{ color: saved ? THEME.accentSecondary : THEME.textMuted }}
                     >
-                        ⊠ {post.commentCount ?? 0} REPLIES
+                        <span>{saved ? '◆' : '◇'}</span>
+                        {saved ? 'SAVED' : 'SAVE'}
                     </button>
 
-                    {/* Post ID */}
-                    <span
-                        className="ml-auto text-[10px] tracking-wider"
-                        style={{ fontFamily: "'Share Tech Mono', monospace", color: "rgba(57,255,100,0.1)" }}
-                    >#{`POST_0x${post._id?.slice(-3).toUpperCase() || "???"}`}</span>
                 </div>
             </div>
-
-            <style>{`
-        @keyframes karmaBump {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.3); }
-          100% { transform: scale(1); }
-        }
-        @keyframes loadSweep {
-          from { transform: translateX(-100%); }
-          to { transform: translateX(100%); }
-        }
-      `}</style>
-        </div>
+        </>
     );
 }

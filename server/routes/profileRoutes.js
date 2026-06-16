@@ -1,5 +1,4 @@
 const express = require("express");
-
 const router = express.Router();
 
 const {
@@ -7,26 +6,24 @@ const {
     getUserPosts,
     getUserComments,
     updateProfile,
-    getKarmaBadges
+    getSavedPosts
 } = require("../controllers/profileController");
+
 const { protect } = require("../middleware/authMiddleware");
 
+// IMPORTANT: must destructure upload
+const { upload } = require("../middleware/uploadMiddleware");
 
-
-// PUBLIC ROUTES
-
+router.get("/me/saved", protect, getSavedPosts);
 router.get("/:userId", getUserProfile);
-
 router.get("/:userId/posts", getUserPosts);
-
 router.get("/:userId/comments", getUserComments);
 
-router.get("/:userId/karma", getKarmaBadges);
-
-
-
-router.put("/update/me", protect, updateProfile);
-
-
+router.put(
+    "/update/me",
+    protect,
+    upload.single("avatar"),
+    updateProfile
+);
 
 module.exports = router;

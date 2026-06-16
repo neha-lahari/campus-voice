@@ -34,12 +34,6 @@ const userSchema = new mongoose.Schema({
         default: "student"
     },
 
-
-
-    // ======================
-    // PROFILE FIELDS
-    // ======================
-
     bio: {
         type: String,
         default: ""
@@ -51,45 +45,33 @@ const userSchema = new mongoose.Schema({
     },
 
 
-
-    // ======================
-    // KARMA + BADGES
-    // ======================
-
-    karma: {
+    karma: {// remove them ssoon!!!
         type: Number,
         default: 0
     },
 
-    badges: [
+    badges: [///removee themmmm
         {
             type: String
         }
     ],
-
-
-
-    // ======================
-    // SETTINGS
-    // ======================
 
     isAnonymous: {
         type: Boolean,
         default: false
     },
 
-
-
-    // ======================
-    // SAVED POSTS
-    // ======================
-
     savedPosts: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Post"
         }
-    ]
+    ],
+
+    joinedCommunities: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Community"
+    }]
 
 }, { timestamps: true });
 

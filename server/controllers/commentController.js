@@ -1,478 +1,141 @@
-const Comment = require("../models/commentModel");
-const Post = require("../models/postModel");
+const Comment = require('../models/commentModel');
+const Post = require('../models/postModel');
+const { createNotification } = require('../helpers/createNotification');/////seee laterrr
 
-
-// ======================================
-// BUILD COMMENT TREE
-// ======================================
-
-function buildCommentTree(comments, parent = null) {
-
-    let result = [];
-
-    comments.forEach((comment) => {
-
-        // TOP LEVEL COMMENTS
-
-        if (
-
-            (!comment.parentComment && !parent)
-
-            ||
-
-            comment.parentComment?.toString() ===
-            parent?.toString()
-
-        ) {
-
-            result.push({
-
-                ...comment._doc,
-
-                replies: buildCommentTree(
-                    comments,
-                    comment._id
-                )
-
-            });
-
-        }
-
-    });
-
-    return result;
-}
-
-
-// ======================================
-// CREATE COMMENT / REPLY
-// ======================================
-
+// ================= CREATE COMMENT =================
 exports.createComment = async (req, res) => {
-
     try {
+        const { postId, body, parentCommentId } = req.body;
 
-        const {
-            body,
-            postId,
-            parentComment,
-            isAnonymous
-        } = req.body;
-
-        // VALIDATE BODY
-
-        if (!body || !body.trim()) {
-
+        if (!postId || !body) {
             return res.status(400).json({
-                message: "Comment body is required"
+                success: false,
+                message: "postId and body required"
             });
-
         }
-
-        // CHECK POST EXISTS
 
         const post = await Post.findById(postId);
 
         if (!post) {
-
             return res.status(404).json({
+                success: false,
                 message: "Post not found"
             });
-
         }
-
-        // CHECK PARENT COMMENT EXISTS
-
-        if (parentComment) {
-
-            const parentExists =
-                await Comment.findById(parentComment);
-
-            if (!parentExists) {
-
-                return res.status(404).json({
-                    message: "Parent comment not found"
-                });
-
-            }
-
-        }
-
-        // CREATE COMMENT
 
         const comment = await Comment.create({
-
             body,
-
             author: req.user.id,
-
             post: postId,
-
-            parentComment: parentComment || null,
-
-            isAnonymous: isAnonymous || false
-
+            parentComment: parentCommentId || null
         });
+
+        await comment.populate("author", "name rollNumber karma avatar");
+
+        // ✅ NOTIFICATION: reply to a comment
+        if (parentCommentId) {
+            const parentComment = await Comment.findById(parentCommentId);
+            if (parentComment && parentComment.author.toString() !== req.user.id) {
+                await createNotification({
+                    userId: parentComment.author,
+                    type: "REPLY",
+                    message: `${req.user.name || "Someone"} replied to your comment`,
+                    link: `/post/${postId}`,
+                    metadata: { postId, commentId: comment._id }
+                });
+            }
+        }
+        // ✅ NOTIFICATION: new comment on post (notify post author)
+        else {
+            if (post.author.toString() !== req.user.id) {
+                await createNotification({
+                    userId: post.author,
+                    type: "COMMENT",
+                    message: `${req.user.name || "Someone"} commented on your post`,
+                    link: `/post/${postId}`,
+                    metadata: { postId, commentId: comment._id }
+                });
+            }
+        }
 
         res.status(201).json({
-
-            message: "Comment created",
-
+            success: true,
             comment
-
         });
 
-    } catch (error) {
-
+    } catch (err) {
         res.status(500).json({
-            message: error.message
+            success: false,
+            message: err.message
         });
-
     }
-
 };
 
-
-// ======================================
-// GET COMMENTS OF POST
-// ======================================
-
-exports.getCommentsByPost = async (req, res) => {
-
+// ================= GET COMMENTS =================
+exports.getComments = async (req, res) => {
     try {
+        const { postId } = req.query;
 
-        const comments = await Comment.find({
-
-            post: req.params.postId
-
-        })
-
-            .populate("author", "username")
-
-            .sort({ createdAt: -1 });
-
-        // BUILD TREE
-
-        const threadedComments =
-            buildCommentTree(comments);
-
-        res.json(threadedComments);
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message
-        });
-
-    }
-
-};
-
-
-// ======================================
-// UPDATE COMMENT
-// ======================================
-
-exports.updateComment = async (req, res) => {
-
-    try {
-
-        const comment = await Comment.findById(
-            req.params.commentId
-        );
-
-        if (!comment) {
-
-            return res.status(404).json({
-                message: "Comment not found"
-            });
-
-        }
-
-        // OWNER CHECK
-
-        if (
-            comment.author.toString() !== req.user.id
-        ) {
-
-            return res.status(403).json({
-                message: "Unauthorized"
-            });
-
-        }
-
-        // VALIDATE BODY
-
-        if (!req.body.body || !req.body.body.trim()) {
-
+        if (!postId) {
             return res.status(400).json({
-                message: "Comment body is required"
+                success: false,
+                message: "postId required"
             });
-
         }
 
-        comment.body = req.body.body;
-
-        await comment.save();
+        const comments = await Comment.find({ post: postId })
+            .populate("author", "name rollNumber karma avatar")
+            .sort({ createdAt: 1 });
 
         res.json({
-
-            message: "Comment updated",
-
-            comment
-
+            success: true,
+            comments
         });
 
-    } catch (error) {
-
+    } catch (err) {
         res.status(500).json({
-            message: error.message
+            success: false,
+            message: err.message
         });
-
     }
-
 };
 
-
-// ======================================
-// DELETE COMMENT
-// ======================================
-
-exports.deleteComment = async (req, res) => {
-
+// ================= VOTE COMMENT =================
+exports.voteComment = async (req, res) => {
     try {
-
-        const comment = await Comment.findById(
-            req.params.commentId
-        );
+        const { type } = req.body;
+        const comment = await Comment.findById(req.params.id);
 
         if (!comment) {
-
-            return res.status(404).json({
-                message: "Comment not found"
-            });
-
-        }
-
-        // OWNER CHECK
-
-        if (
-            comment.author.toString() !== req.user.id
-        ) {
-
-            return res.status(403).json({
-                message: "Unauthorized"
-            });
-
-        }
-
-        await comment.deleteOne();
-
-        res.json({
-            message: "Comment deleted"
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message
-        });
-
-    }
-
-};
-
-
-// ======================================
-// UPVOTE COMMENT
-// ======================================
-
-exports.upvoteComment = async (req, res) => {
-
-    try {
-
-        const comment = await Comment.findById(
-            req.params.commentId
-        );
-
-        if (!comment) {
-
-            return res.status(404).json({
-                message: "Comment not found"
-            });
-
+            return res.status(404).json({ message: "Comment not found" });
         }
 
         const userId = req.user.id;
 
-        // ALREADY UPVOTED ?
+        comment.upvotes = comment.upvotes.filter(id => id.toString() !== userId);
+        comment.downvotes = comment.downvotes.filter(id => id.toString() !== userId);
 
-        const alreadyUpvoted =
-            comment.upvotes.some(
-                (id) => id.toString() === userId
-            );
+        let userVote = null;
 
-        // TOGGLE REMOVE
-
-        if (alreadyUpvoted) {
-
-            comment.upvotes =
-                comment.upvotes.filter(
-                    (id) => id.toString() !== userId
-                );
-
-            await comment.save();
-
-            return res.json({
-                message: "Upvote removed",
-                karma:
-                    comment.upvotes.length -
-                    comment.downvotes.length
-            });
-
+        if (type === "up") {
+            comment.upvotes.push(userId);
+            userVote = "up";
+        } else if (type === "down") {
+            comment.downvotes.push(userId);
+            userVote = "down";
         }
-
-        // REMOVE DOWNVOTE
-
-        comment.downvotes =
-            comment.downvotes.filter(
-                (id) => id.toString() !== userId
-            );
-
-        // ADD UPVOTE
-
-        comment.upvotes.push(userId);
 
         await comment.save();
 
-        res.json({
-
-            message: "Comment upvoted",
-
-            karma:
-                comment.upvotes.length -
-                comment.downvotes.length
-
+        return res.json({
+            success: true,
+            upvotes: comment.upvotes.length,
+            downvotes: comment.downvotes.length,
+            voteCount: comment.upvotes.length - comment.downvotes.length,
+            userVote
         });
 
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message
-        });
-
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
-
 };
-
-
-// ======================================
-// DOWNVOTE COMMENT
-// ======================================
-
-exports.downvoteComment = async (req, res) => {
-
-    try {
-
-        const comment = await Comment.findById(
-            req.params.commentId
-        );
-
-        if (!comment) {
-
-            return res.status(404).json({
-                message: "Comment not found"
-            });
-
-        }
-
-        const userId = req.user.id;
-
-        // ALREADY DOWNVOTED ?
-
-        const alreadyDownvoted =
-            comment.downvotes.some(
-                (id) => id.toString() === userId
-            );
-
-        // TOGGLE REMOVE
-
-        if (alreadyDownvoted) {
-
-            comment.downvotes =
-                comment.downvotes.filter(
-                    (id) => id.toString() !== userId
-                );
-
-            await comment.save();
-
-            return res.json({
-
-                message: "Downvote removed",
-
-                karma:
-                    comment.upvotes.length -
-                    comment.downvotes.length
-
-            });
-
-        }
-
-        // REMOVE UPVOTE
-
-        comment.upvotes =
-            comment.upvotes.filter(
-                (id) => id.toString() !== userId
-            );
-
-        // ADD DOWNVOTE
-
-        comment.downvotes.push(userId);
-
-        await comment.save();
-
-        res.json({
-
-            message: "Comment downvoted",
-
-            karma:
-                comment.upvotes.length -
-                comment.downvotes.length
-
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message
-        });
-
-    }
-
-};
-
-// MongoDB returns:
-
-// [
-//     comment1,
-//     comment2,
-//     comment3
-// ]
-
-// FLAT array.
-
-// We convert into:
-
-// [
-//     {
-//         comment,
-//         replies: [
-//             {
-//                 reply,
-//                 replies: []
-//             }
-//         ]
-//     }
-// ]
-
-// TREE structure.

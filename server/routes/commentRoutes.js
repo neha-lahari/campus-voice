@@ -1,45 +1,10 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
+const { createComment, getComments,voteComment } = require('../controllers/commentController');
+const { protect } = require('../middleware/authMiddleware');
 
-const { protect } = require("../middleware/authMiddleware");
-
-const {
-    createComment,
-    getCommentsByPost,
-    updateComment,
-    deleteComment,
-    upvoteComment,
-    downvoteComment
-} = require("../controllers/commentController");
-
-// ===============================
-// CREATE COMMENT
-// ===============================
-router.post("/", protect, createComment);
-
-// ===============================
-// GET COMMENTS OF POST
-// ===============================
-router.get("/:postId", getCommentsByPost);
-
-// ===============================
-// UPDATE COMMENT
-// ===============================
-router.put("/:commentId", protect, updateComment);
-
-// ===============================
-// DELETE COMMENT
-// ===============================
-router.delete("/:commentId", protect, deleteComment);
-
-// ===============================
-// UPVOTE COMMENT
-// ===============================
-router.post("/upvote/:commentId", protect, upvoteComment);
-
-// ===============================
-// DOWNVOTE COMMENT
-// ===============================
-router.post("/downvote/:commentId", protect, downvoteComment);
+router.post('/', protect, createComment);
+router.get('/', protect, getComments);
+router.post("/:id/vote", protect, voteComment);
 
 module.exports = router;

@@ -2,44 +2,26 @@ const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema(
     {
-        sender: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true
-        },
+        sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 
-        // DM chat (user ↔ user)
-        receiver: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            default: null
-        },
+        conversation: { type: mongoose.Schema.Types.ObjectId, ref: "Conversation", default: null },
+        community: { type: mongoose.Schema.Types.ObjectId, ref: "Community", default: null },
 
-        // Community chat (group)
-        community: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Community",
-            default: null
-        },
-
-        text: {
-            type: String,
-            trim: true,
-            default: ""
-        },
+        text: { type: String, default: "" },
 
         attachments: [
             {
                 url: String,
+                fileType: String,  // 👈 changed from "type" to "fileType"
                 name: String
             }
         ],
 
-        isRead: {
-            type: Boolean,
-            default: false
-        }
+        pinned: { type: Boolean, default: false },
 
+        seenBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+
+        deliveredTo: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
     },
     { timestamps: true }
 );

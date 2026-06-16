@@ -1,26 +1,38 @@
 const Community = require("../models/communityModel");
+const Post = require("../models/postModel");
 const mongoose = require("mongoose");
 
 
-// ============================
+// =====================================
 // CREATE COMMUNITY
-// ============================
+// POST /api/communities
+// =====================================
 exports.createCommunity = async (req, res) => {
     try {
+
         const { name, slug, description } = req.body;
 
         if (!name || !slug) {
-            return res.status(400).json({ message: "Name and slug required" });
+            return res.status(400).json({
+                success: false,
+                message: "Name and slug are required"
+            });
         }
 
-        const existing = await Community.findOne({ slug });
+        const existing = await Community.findOne({
+            slug: slug.toLowerCase()
+        });
+
         if (existing) {
-            return res.status(400).json({ message: "Community already exists" });
+            return res.status(400).json({
+                success: false,
+                message: "Community already exists"
+            });
         }
 
         const community = await Community.create({
             name,
-            slug,
+            slug: slug.toLowerCase(),
             description: description || "",
             members: [req.user.id],
             moderators: [req.user.id],
@@ -28,20 +40,31 @@ exports.createCommunity = async (req, res) => {
             type: "custom"
         });
 
-        res.status(201).json({ success: true, community });
+        res.status(201).json({
+            success: true,
+            community
+        });
 
     } catch (err) {
+
         console.error(err);
-        res.status(500).json({ message: "Server error" });
+
+        res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
     }
 };
 
 
-// ============================
+// =====================================
 // GET ALL COMMUNITIES
-// ============================
+// GET /api/communities
+// GET /api/communities?joined=true
+// =====================================
 exports.getCommunities = async (req, res) => {
     try {
+
         const { joined } = req.query;
 
         let filter = {};
@@ -51,143 +74,174 @@ exports.getCommunities = async (req, res) => {
         }
 
         const communities = await Community.find(filter)
-            .select("name slug description members moderators");
+            .populate("moderators", "username")
+            .sort({ createdAt: -1 });
 
-        res.json({
+        const formatted = communities.map((community) => {
+
+            const isJoined = community.members.some(
+                (member) => member.toString() === req.user.id
+            );
+
+            return {
+                _id: community._id,
+                name: community.name,
+                slug: community.slug,
+                description: community.description,
+                type: community.type,
+                memberCount: community.members.length,
+                moderators: community.moderators,
+                isJoined
+            };
+        });
+
+        res.status(200).json({
             success: true,
-            count: communities.length,
-            communities
+            count: formatted.length,
+            communities: formatted
         });
 
     } catch (err) {
+
         console.error(err);
-        res.status(500).json({ message: "Server error" });
+
+        res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
     }
 };
 
 
-// ============================
+// =====================================
 // GET COMMUNITY BY SLUG
-// ============================
+// GET /api/communities/:slug
+// =====================================
 exports.getCommunityBySlug = async (req, res) => {
     try {
+
         const { slug } = req.params;
 
         const community = await Community.findOne({ slug })
             .populate("moderators", "username name")
-            .populate("members", "username name");
+            .populate("createdBy", "username name");
 
         if (!community) {
-            return res.status(404).json({ message: "Community not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Community not found"
+            });
         }
 
-        const userId = req.user.id;
+        const recentActivity = await Post.find({
+            community: community._id
+        })
+            .populate("author", "username name")
+            .sort({ createdAt: -1 })
+            .limit(20);
 
-        const isMember = community.members.some(
-            m => m._id.toString() === userId
+        const isJoined = community.members.some(
+            (member) => member.toString() === req.user.id
         );
 
-        res.json({
+        res.status(200).json({
             success: true,
             community: {
                 _id: community._id,
                 name: community.name,
                 slug: community.slug,
                 description: community.description,
-                membersCount: community.members.length,
+                type: community.type,
+                memberCount: community.members.length,
                 moderators: community.moderators,
-                isMember
+                isJoined,
+                recentActivity
             }
         });
 
     } catch (err) {
+
         console.error(err);
-        res.status(500).json({ message: "Server error" });
+
+        res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
     }
 };
 
 
-// ============================
-// JOIN / LEAVE TOGGLE
-// ============================
+// =====================================
+// JOIN / LEAVE COMMUNITY
+// POST /api/communities/:id/join
+// =====================================
 exports.joinLeaveCommunity = async (req, res) => {
     try {
-        const userId = req.user.id;
-        const communityId = req.params.id;
 
-        if (!mongoose.Types.ObjectId.isValid(communityId)) {
-            return res.status(400).json({ message: "Invalid ID" });
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid community id"
+            });
         }
 
-        const community = await Community.findById(communityId);
+        const community = await Community.findById(id);
 
         if (!community) {
-            return res.status(404).json({ message: "Not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Community not found"
+            });
         }
+
+        const userId = req.user.id;
 
         const isMember = community.members.some(
-            id => id.toString() === userId
+            (member) => member.toString() === userId
         );
 
+        // LEAVE
         if (isMember) {
+
             community.members = community.members.filter(
-                id => id.toString() !== userId
+                (member) => member.toString() !== userId
             );
-        } else {
-            community.members.push(userId);
+
+            community.moderators = community.moderators.filter(
+                (mod) => mod.toString() !== userId
+            );
+
+            await community.save();
+
+            return res.status(200).json({
+                success: true,
+                message: "Left community",
+                joined: false,
+                memberCount: community.members.length
+            });
         }
+
+        // JOIN
+        community.members.push(userId);
 
         await community.save();
 
-        res.json({
+        res.status(200).json({
             success: true,
-            message: isMember ? "Left community" : "Joined community",
+            message: "Joined community",
+            joined: true,
             memberCount: community.members.length
         });
 
     } catch (err) {
+
         console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
-};
 
-exports.getCommunityById = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ message: "Invalid community id" });
-        }
-
-        const community = await Community.findById(id)
-            .populate("moderators", "username name")
-            .populate("members", "username name");
-
-        if (!community) {
-            return res.status(404).json({ message: "Community not found" });
-        }
-
-        const userId = req.user.id;
-
-        const isMember = community.members.some(
-            m => m._id.toString() === userId
-        );
-
-        res.json({
-            success: true,
-            community: {
-                _id: community._id,
-                name: community.name,
-                slug: community.slug,
-                description: community.description,
-                membersCount: community.members.length,
-                moderators: community.moderators,
-                isMember
-            }
+        res.status(500).json({
+            success: false,
+            message: "Server error"
         });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
     }
 };

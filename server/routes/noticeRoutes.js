@@ -1,26 +1,34 @@
 const express = require("express");
 const router = express.Router();
-
 const { protect } = require("../middleware/authMiddleware");
-const upload = require("../middleware/uploadMiddleware");
+
+// ✅ safe import — works whether uploadMiddleware exports default or named
+let upload;
+try {
+    const uploadMiddleware = require("../middleware/uploadMiddleware");
+    upload = uploadMiddleware.upload || uploadMiddleware;
+} catch (e) {
+    // fallback: no file upload, use multer directly
+    const multer = require("multer");
+    upload = multer({ storage: multer.memoryStorage() });
+}
 
 const {
     createNotice,
     getNoticesByCommunity,
     updateNotice,
     deleteNotice,
-    archiveNotice
+    archiveNotice,
+    searchNotices
 } = require("../controllers/noticeController");
 
-// CREATE (WITH FILES)
-router.post(
-    "/",
-    protect,
-    upload.array("files", 5),
-    createNotice
-);
+// ⚠️ SEARCH must be above /:communityId
+router.get("/search/all", searchNotices);
 
-// GET
+// CREATE
+router.post("/", protect, upload.array("files", 5), createNotice);
+
+// GET BY COMMUNITY
 router.get("/:communityId", getNoticesByCommunity);
 
 // UPDATE

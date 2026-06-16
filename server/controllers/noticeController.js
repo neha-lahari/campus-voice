@@ -1,215 +1,223 @@
 const Notice = require("../models/noticeModel");
+const Community = require("../models/communityModel");
 const cloudinary = require("../config/cloudinary");
-const fs = require("fs");
+const streamifier = require("streamifier");
+const { createNotification } = require("../helpers/createNotification");
 
-// ==========================
-// CREATE NOTICE + FILE UPLOAD
-// ==========================
+// ================= HELPERS =================
+const createReminders = (deadline) => {
+    if (!deadline) return [];
+    const d = new Date(deadline);
+    return [
+        { time: new Date(d.getTime() - 24 * 60 * 60 * 1000), type: "24h", sent: false },
+        { time: new Date(d.getTime() - 3 * 60 * 60 * 1000), type: "3h", sent: false }
+    ];
+};
 
+const normalizeRole = (role) => role?.toLowerCase();
+
+const uploadToCloudinary = (buffer, originalname) => {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { folder: "campusvoice/notices", resource_type: "auto" },
+            (err, result) => err ? reject(err) : resolve(result)
+        );
+        streamifier.createReadStream(buffer).pipe(stream);
+    });
+};
+
+// ================= CREATE =================
 exports.createNotice = async (req, res) => {
     try {
-        if (!req.user || !["admin", "cr"].includes(req.user.role)) {
-            return res.status(403).json({
-                message: "Only CR/Admin can create notices"
-            });
+        const role = normalizeRole(req.user?.role);
+        if (!req.user || !["admin", "cr", "moderator"].includes(role)) {
+            return res.status(403).json({ message: "Not allowed" });
         }
 
-        const {
-            title,
-            content,
-            type,
-            communityId,
-            deadline,
-            priority
-        } = req.body;
+        const { title, content, type, communityId, deadline, priority } = req.body;
+
+        if (!title || !content || !communityId) {
+            return res.status(400).json({ message: "title, content and communityId are required" });
+        }
 
         let attachments = [];
-
-        // FILE UPLOAD HANDLING
-        if (req.files && req.files.length > 0) {
+        if (req.files?.length) {
             for (let file of req.files) {
-                const result = await cloudinary.uploader.upload(file.path, {
-                    folder: "campusvoice/notices",
-                    resource_type: "auto"
-                });
-
+                const result = await uploadToCloudinary(file.buffer, file.originalname);
                 attachments.push({
                     url: result.secure_url,
                     public_id: result.public_id,
                     name: file.originalname
                 });
-
-                fs.unlinkSync(file.path);
             }
         }
 
         const notice = await Notice.create({
             title,
             content,
-            type: type ? type.toLowerCase() : "general",
+            type: type || "general",
             community: communityId,
             createdBy: req.user.id,
             deadline: deadline || null,
             priority: priority || "normal",
-            attachments
+            attachments,
+            reminderSchedule: createReminders(deadline)
         });
 
-        res.status(201).json({
-            message: "Notice created successfully",
-            notice
-        });
+        const populated = await notice.populate("createdBy", "name role");
 
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+        // ✅ NOTIFICATION: alert all community members about new notice
+        try {
+            const community = await Community.findById(communityId);
+            if (community?.members?.length) {
+                for (const memberId of community.members) {
+                    // don't notify the creator themselves
+                    if (memberId.toString() !== req.user.id) {
+                        await createNotification({
+                            userId: memberId,
+                            type: "NOTICE",
+                            message: `📢 New notice in ${community.name}: "${title}"`,
+                            link: `/community/${community.slug}`,
+                            metadata: { noticeId: notice._id, communityId }
+                        });
+                    }
+                }
+            }
+        } catch (notifErr) {
+            // don't fail the whole request if notification fails
+            console.error("Notice notification error:", notifErr.message);
+        }
+
+        res.status(201).json({ message: "Notice created", notice: populated });
+    } catch (err) {
+        console.error("createNotice error:", err);
+        res.status(500).json({ message: err.message });
     }
 };
 
-// ==========================
-// GET NOTICES
-// ==========================
-
+// ================= GET BY COMMUNITY =================
 exports.getNoticesByCommunity = async (req, res) => {
     try {
-
-        const { type, archived } = req.query;
+        const { type, includeArchived, q } = req.query;
 
         let filter = {
-            community: req.params.communityId
+            community: req.params.communityId,
+            isDeleted: false
         };
 
-        if (archived === "true") {
-            filter.isArchived = true;
-        } else {
-            filter.isArchived = false;
-        }
+        if (includeArchived !== "true") filter.isArchived = false;
+        if (type && type !== "all") filter.type = type.toLowerCase();
 
-        if (type) {
-            filter.type = type.toLowerCase();
-        }
-
-        const notices = await Notice.find(filter)
-            .populate("createdBy", "username")
+        let notices = await Notice.find(filter)
+            .populate("createdBy", "name role")
             .sort({ createdAt: -1 });
 
-        res.json(notices);
+        if (q) {
+            const query = q.toLowerCase();
+            notices = notices.filter(n =>
+                n.title.toLowerCase().includes(query) ||
+                n.content.toLowerCase().includes(query)
+            );
+        }
 
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+        const priorityOrder = { high: 1, medium: 2, normal: 3 };
+        notices.sort((a, b) =>
+            (priorityOrder[a.priority] - priorityOrder[b.priority]) ||
+            (new Date(b.createdAt) - new Date(a.createdAt))
+        );
+
+        res.json({ notices });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
-// ==========================
-// UPDATE NOTICE
-// ==========================
-
+// ================= UPDATE =================
 exports.updateNotice = async (req, res) => {
     try {
-
         const notice = await Notice.findById(req.params.noticeId);
+        if (!notice) return res.status(404).json({ message: "Not found" });
 
-        if (!notice) {
-            return res.status(404).json({
-                message: "Notice not found"
-            });
-        }
-
-        if (
-            notice.createdBy.toString() !== req.user.id &&
-            req.user.role !== "admin"
-        ) {
-            return res.status(403).json({
-                message: "Not allowed"
-            });
+        const role = normalizeRole(req.user?.role);
+        if (notice.createdBy.toString() !== req.user.id && role !== "admin") {
+            return res.status(403).json({ message: "Not allowed" });
         }
 
         const { title, content, type, deadline, priority } = req.body;
-
         if (title) notice.title = title;
         if (content) notice.content = content;
-        if (type) notice.type = type.toLowerCase();
-        if (deadline !== undefined) notice.deadline = deadline;
+        if (type) notice.type = type;
         if (priority) notice.priority = priority;
+        if (deadline !== undefined) {
+            notice.deadline = deadline || null;
+            notice.reminderSchedule = createReminders(deadline);
+        }
 
         await notice.save();
-
-        res.json({
-            message: "Notice updated",
-            notice
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+        await notice.populate("createdBy", "name role");
+        res.json({ message: "Updated", notice });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
-// ==========================
-// DELETE NOTICE
-// ==========================
-
+// ================= SOFT DELETE =================
 exports.deleteNotice = async (req, res) => {
     try {
-
         const notice = await Notice.findById(req.params.noticeId);
+        if (!notice) return res.status(404).json({ message: "Not found" });
 
-        if (!notice) {
-            return res.status(404).json({
-                message: "Notice not found"
-            });
+        const role = normalizeRole(req.user?.role);
+        if (notice.createdBy.toString() !== req.user.id && role !== "admin") {
+            return res.status(403).json({ message: "Not allowed" });
         }
 
-        if (
-            notice.createdBy.toString() !== req.user.id &&
-            req.user.role !== "admin"
-        ) {
-            return res.status(403).json({
-                message: "Not allowed"
-            });
-        }
-
-        await notice.deleteOne();
-
-        res.json({
-            message: "Notice deleted"
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+        notice.isDeleted = true;
+        await notice.save();
+        res.json({ message: "Deleted" });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
-// ==========================
-// ARCHIVE NOTICE
-// ==========================
-
+// ================= ARCHIVE =================
 exports.archiveNotice = async (req, res) => {
     try {
-
         const notice = await Notice.findById(req.params.noticeId);
+        if (!notice) return res.status(404).json({ message: "Not found" });
 
-        if (!notice) {
-            return res.status(404).json({
-                message: "Notice not found"
-            });
+        const role = normalizeRole(req.user?.role);
+        if (notice.createdBy.toString() !== req.user.id && role !== "admin") {
+            return res.status(403).json({ message: "Not allowed" });
         }
 
         notice.isArchived = true;
         await notice.save();
+        res.json({ message: "Archived" });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
 
-        res.json({
-            message: "Notice archived"
-        });
+// ================= SEARCH =================
+exports.searchNotices = async (req, res) => {
+    try {
+        const { q, community } = req.query;
+        if (!q || !community) {
+            return res.status(400).json({ message: "q and community are required" });
+        }
 
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+        const notices = await Notice.find({
+            community,
+            isDeleted: false,
+            $or: [
+                { title: { $regex: q, $options: "i" } },
+                { content: { $regex: q, $options: "i" } }
+            ]
+        }).populate("createdBy", "name role");
+
+        res.json({ notices });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };

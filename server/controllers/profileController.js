@@ -1,194 +1,148 @@
 const User = require("../models/userModel");
-const Post = require("../models/PostModel");
-const Comment = require("../models/CommentModel");
+const Post = require("../models/postModel");
+const Comment = require("../models/commentModel");
+const cloudinary = require("../config/cloudinary");
+const streamifier = require("streamifier");
+const getBadges = require("../helpers/getBadges");////removeee thisss
 
 
-
-// =======================================
-// GET USER PROFILE
-// =======================================
 
 const getUserProfile = async (req, res) => {
-
     try {
-
         const userId = req.params.userId;
 
         const user = await User.findById(userId)
-            .select("-password");
+            .select("-password -email -rollNumber") 
+            .populate("joinedCommunities", "name slug")
+            .lean();
 
-        if (!user) {
-            return res.status(404).json({
-                message: "User not found"
-            });
-        }
+        if (!user) return res.status(404).json({ message: "User not found" });
 
-        res.status(200).json(user);
+        const posts = await Post.find({ author: userId })
+            .populate("author", "name avatar karma")
+            .populate("community", "name slug")
+            .sort({ createdAt: -1 });
 
-    } catch (error) {
+        const comments = await Comment.find({ author: userId })
+            .populate("author", "name avatar")
+            .populate("post", "title")
+            .sort({ createdAt: -1 });
 
-        res.status(500).json({
-            message: error.message
+        const badges = getBadges(user.karma || 0);//// removee thiss
+
+        res.json({
+            _id: user._id,
+            name: user.name,
+            avatar: user.avatar,
+            bio: user.bio,
+            karma: user.karma,
+            role: user.role,           // ✅ include role
+            department: user.department,
+            batch: user.batch,
+            badges,///removee thiss
+            createdAt: user.createdAt,
+            joinedCommunities: user.joinedCommunities,
+            postsCount: posts.length,
+            commentsCount: comments.length,
+            posts,
+            comments
         });
-
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
-
 };
-
-
 
 // =======================================
 // GET USER POSTS
 // =======================================
-
 const getUserPosts = async (req, res) => {
-
     try {
-
-        const userId = req.params.userId;
-
-        const posts = await Post.find({
-            author: userId
-        })
-            .populate("author", "name avatar")
+        const posts = await Post.find({ author: req.params.userId })
+            .populate("author", "name avatar karma")
+            .populate("community", "name slug")
             .sort({ createdAt: -1 });
-
-        res.status(200).json(posts);
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message
-        });
-
+        res.json({ posts });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
-
 };
-
-
-
 
 // =======================================
 // GET USER COMMENTS
 // =======================================
-
 const getUserComments = async (req, res) => {
-
     try {
-
-        const userId = req.params.userId;
-
-        const comments = await Comment.find({
-            user: userId
-        })
-            .populate("user", "name avatar")
+        const comments = await Comment.find({ author: req.params.userId })
+            .populate("author", "name avatar")
+            .populate("post", "title")
             .sort({ createdAt: -1 });
-
-        res.status(200).json(comments);
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message
-        });
-
+        res.json({ comments });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
-
 };
 
-
-
+// =======================================
+// GET SAVED POSTS
+// =======================================
+const getSavedPosts = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).populate({
+            path: "savedPosts",
+            populate: [
+                { path: "author", select: "name avatar karma" },
+                { path: "community", select: "name slug" }
+            ]
+        });
+        if (!user) return res.status(404).json({ message: "User not found" });
+        res.json({ posts: user.savedPosts || [] });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
 
 // =======================================
-// UPDATE OWN PROFILE
+// UPDATE PROFILE
 // =======================================
-
 const updateProfile = async (req, res) => {
-
     try {
-
         const userId = req.user.id;
+        const { name, bio } = req.body;
 
-        const {
-            name,
-            bio,
-            avatar,
-            department,
-            batch,
-            year,
-            isAnonymous
-        } = req.body;
+        let avatarUrl;
 
-        const updatedUser = await User.findByIdAndUpdate(
-            userId,
-            {
-                name,
-                bio,
-                avatar,
-                department,
-                batch,
-                year,
-                isAnonymous
-            },
-            { new: true }
-        ).select("-password");
-
-        res.status(200).json({
-            message: "Profile updated successfully",
-            user: updatedUser
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message
-        });
-
-    }
-
-};
-
-
-
-
-// =======================================
-// GET KARMA + BADGES
-// =======================================
-
-const getKarmaBadges = async (req, res) => {
-
-    try {
-
-        const userId = req.params.userId;
-
-        const user = await User.findById(userId)
-            .select("name avatar karma badges");
-
-        if (!user) {
-            return res.status(404).json({
-                message: "User not found"
+        if (req.file) {
+            const result = await new Promise((resolve, reject) => {
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    { folder: "campusVoice/avatars", resource_type: "image" },
+                    (error, result) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    }
+                );
+                streamifier.createReadStream(req.file.buffer).pipe(uploadStream);
             });
+            avatarUrl = result.secure_url;
         }
 
-        res.status(200).json(user);
+        const updateData = {};
+        if (name !== undefined) updateData.name = name;
+        if (bio !== undefined) updateData.bio = bio;
+        if (avatarUrl) updateData.avatar = avatarUrl;
 
-    } catch (error) {
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true })
+            .select("-password -email -rollNumber");
 
-        res.status(500).json({
-            message: error.message
-        });
-
+        res.json({ message: "Profile updated successfully", user: updatedUser });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
-
 };
-
-
-
 
 module.exports = {
     getUserProfile,
     getUserPosts,
     getUserComments,
     updateProfile,
-    getKarmaBadges
+    getSavedPosts
 };

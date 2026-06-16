@@ -1,145 +1,119 @@
+const Conversation = require("../models/conversationModel");
 const Message = require("../models/messageModel");
+const { createNotification } = require("../helpers/createNotification");
 
-// ===============================
-// 1. SEND DIRECT MESSAGE (DM)
-// ===============================
-exports.sendDM = async (req, res) => {
+/* CREATE OR GET CONVERSATION */
+exports.createConversation = async (req, res) => {
     try {
-        const { receiverId, text, attachments } = req.body;
+        const { userId } = req.body;
 
-        const message = await Message.create({
-            sender: req.user.id,
-            receiver: receiverId,
-            text,
-            attachments: attachments || []
+        let convo = await Conversation.findOne({
+            participants: { $all: [req.user.id, userId] },
         });
 
-        res.status(201).json({
-            message: "Message sent",
-            data: message
-        });
+        if (!convo) {
+            convo = await Conversation.create({
+                participants: [req.user.id, userId],
+            });
+        }
 
+        res.json(convo);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
-// ===============================
-// 2. GET DM CONVERSATION
-// ===============================
-exports.getConversation = async (req, res) => {
+/* GET ALL CONVERSATIONS */
+exports.getConversations = async (req, res) => {
     try {
-        const { userId } = req.params;
-
-        const messages = await Message.find({
-            $or: [
-                { sender: req.user.id, receiver: userId },
-                { sender: userId, receiver: req.user.id }
-            ]
+        const convos = await Conversation.find({
+            participants: req.user.id,
         })
+            .populate("participants", "name avatar department batch")
+            .populate({
+                path: "lastMessage",
+                populate: { path: "sender", select: "name avatar" }
+            })
+            .sort({ updatedAt: -1 });
+
+        res.json(convos);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+/* GET DM MESSAGES */
+exports.getMessages = async (req, res) => {
+    try {
+        const messages = await Message.find({
+            conversation: req.params.id,
+        })
+            .populate("sender", "name avatar")
             .sort({ createdAt: 1 });
 
         res.json(messages);
-
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
-// ===============================
-// 3. MARK AS READ
-// ===============================
-exports.markAsRead = async (req, res) => {
+/* SEND DM MESSAGE */
+exports.sendMessage = async (req, res) => {
     try {
-        const { messageId } = req.params;
+        const { conversationId, body } = req.body;
 
-        await Message.findByIdAndUpdate(messageId, {
-            isRead: true
-        });
-
-        res.json({ message: "Marked as read" });
-
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
-// ===============================
-// 4. DELETE MESSAGE
-// ===============================
-exports.deleteMessage = async (req, res) => {
-    try {
-        const { messageId } = req.params;
-
-        await Message.findByIdAndDelete(messageId);
-
-        res.json({ message: "Message deleted" });
-
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
-// ===============================
-// 5. SEARCH MESSAGES
-// ===============================
-exports.searchMessages = async (req, res) => {
-    try {
-        const { q } = req.query;
-
-        const results = await Message.find({
-            text: { $regex: q, $options: "i" }
-        });
-
-        res.json(results);
-
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
-// ===============================
-// 6. COMMUNITY CHAT - SEND
-// ===============================
-exports.sendCommunityMessage = async (req, res) => {
-    try {
-        const { communityId, text } = req.body;
+        const convo = await Conversation.findById(conversationId);
+        if (!convo) return res.status(404).json({ message: "Conversation not found" });
 
         const message = await Message.create({
+            conversation: conversationId,
             sender: req.user.id,
-            community: communityId,
-            text
+            body
         });
 
-        res.status(201).json({
-            message: "Sent to community",
-            data: message
-        });
+        // update lastMessage on conversation
+        convo.lastMessage = message._id;
+        await convo.save();
 
+        await message.populate("sender", "name avatar");
+
+        // ✅ NOTIFICATION: notify the other participant
+        const receiverId = convo.participants.find(
+            p => p.toString() !== req.user.id
+        );
+
+        if (receiverId) {
+            await createNotification({
+                userId: receiverId,
+                type: "DM",
+                message: `${req.user.name || "Someone"} sent you a message`,
+                link: `/messages`,
+                metadata: { conversationId, senderId: req.user.id }
+            });
+        }
+
+        res.status(201).json(message);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
-// ===============================
-// 7. COMMUNITY CHAT - GET
-// ===============================
+/* GET COMMUNITY MESSAGES */
 exports.getCommunityMessages = async (req, res) => {
     try {
-        const { communityId } = req.params;
-        const { page = 1, limit = 20 } = req.query;
-
         const messages = await Message.find({
-            community: communityId
+            community: req.params.communityId,
         })
-            .populate("sender", "username")
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(Number(limit));
+            .populate("sender", "name avatar")
+            .sort({ createdAt: 1 });
 
         res.json(messages);
-
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
     }
 };

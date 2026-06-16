@@ -2,29 +2,17 @@ const mongoose = require("mongoose");
 
 const noticeSchema = new mongoose.Schema(
     {
-        title: {
-            type: String,
-            required: true,
-            trim: true
-        },
-
-        content: {
-            type: String,
-            required: true,
-            trim: true
-        },
+        title: { type: String, required: true, trim: true },
+        content: { type: String, required: true, trim: true },
 
         type: {
             type: String,
             default: "general",
-            trim: true,
-            lowercase: true
+            lowercase: true,
+            trim: true
         },
 
-        deadline: {
-            type: Date,
-            default: null
-        },
+        deadline: { type: Date, default: null },
 
         priority: {
             type: String,
@@ -52,16 +40,16 @@ const noticeSchema = new mongoose.Schema(
             }
         ],
 
-        isArchived: {
-            type: Boolean,
-            default: false
-        },
+        isArchived: { type: Boolean, default: false },
+        isDeleted: { type: Boolean, default: false },
 
-        reminderSent: {
-            type: Boolean,
-            default: false
-        }
-
+        reminderSchedule: [
+            {
+                time: Date,
+                sent: { type: Boolean, default: false },
+                type: { type: String } // "24h" | "3h"
+            }
+        ]
     },
     { timestamps: true }
 );

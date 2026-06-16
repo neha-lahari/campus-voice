@@ -1,10 +1,9 @@
+// middleware/authMiddleware.js
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 
 const protect = async (req, res, next) => {
-
     try {
-
         const auth = req.headers.authorization;
 
         if (!auth?.startsWith("Bearer ")) {
@@ -12,7 +11,6 @@ const protect = async (req, res, next) => {
         }
 
         const token = auth.split(" ")[1];
-
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         const user = await User.findById(decoded.userId).select("-password");
@@ -23,33 +21,22 @@ const protect = async (req, res, next) => {
 
         req.user = user;
         next();
-
     } catch (err) {
         res.status(401).json({ message: "Invalid token" });
     }
 };
 
+// ✅ authorize is exported here so pollRoutes and adminRoutes can use it
 const authorize = (...roles) => {
-
     return (req, res, next) => {
-
         if (!roles.includes(req.user.role)) {
             return res.status(403).json({
                 success: false,
                 message: "Access denied: insufficient role"
             });
         }
-
         next();
     };
 };
-// whn to use this is:
-//In routes:
 
-// router.post("/admin-only", protect, authorize("admin"), handler);
-
-// or:
-
-// router.post("/cr-panel", protect, authorize("cr", "admin"), handler);
-
-module.exports = { protect };
+module.exports = { protect, authorize };

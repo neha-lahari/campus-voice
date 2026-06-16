@@ -1,19 +1,21 @@
-module.exports = function parseRollNumber(rollNumber) {
+export default function parseRollNumber(rollNumber) {
     if (!rollNumber) return null;
 
-    // remove spaces just in case
-    rollNumber = String(rollNumber).trim();
+    const roll = String(rollNumber).trim();
 
-    // ✅ now allow 9 digits
-    if (!/^\d{9}$/.test(rollNumber)) return null;
+    if (roll.length !== 9) {
+        return null;
+    }
 
-    const department = rollNumber.slice(0, 4);
-    const batch = rollNumber.slice(4, 6);
-    const rollNo = rollNumber.slice(6, 9);
+    for (let i = 0; i < roll.length; i++) {
+        if (roll[i] < '0' || roll[i] > '9') {
+            return null;
+        }
+    }
 
     return {
-        department,
-        batch,
-        rollNo
+        department: roll.slice(0, 4),
+        batch: roll.slice(4, 6),
+        rollNo: roll.slice(6, 9),
     };
 };

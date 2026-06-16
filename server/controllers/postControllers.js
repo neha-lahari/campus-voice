@@ -1,177 +1,342 @@
+const mongoose = require("mongoose");
+
 const Post = require("../models/postModel");
+const User = require("../models/userModel");
 const Community = require("../models/communityModel");
 
+const karma = require("../helpers/karma");/// removeee thissss
 
-// ============================
-// CREATE POST
-// ============================
-exports.createPost = async (req, res) => {
+const streamifier = require("streamifier");
+const cloudinary = require("../config/cloudinary");
+
+
+const createPost = async (req, res) => {
     try {
-        const {
-            title,
-            body,
-            communityId,
-            type,
-            flair,
-            isAnonymous,
-            attachments
-        } = req.body;
+        const { title, body, community, flair, isAnonymous, link } = req.body;
 
-        if (!title || !communityId) {
+        if (!title || !community) {
             return res.status(400).json({
-                message: "title & communityId required"
+                success: false,
+                message: "Title and community are required"
             });
         }
 
-        const community = await Community.findById(communityId);
+        const communityExists = await Community.findById(community);
+        if (!communityExists) {
+            return res.status(404).json({
+                success: false,
+                message: "Community not found"
+            });
+        }
 
-        if (!community) {
-            return res.status(404).json({ message: "Community not found" });
+        let attachments = [];
+
+        if (req.files?.length) {
+            for (const file of req.files) {
+
+                const isPDF = file.mimetype === "application/pdf";
+
+                const uploadedFile = await new Promise((resolve, reject) => {
+                    const publicId = isPDF
+                        ? `${Date.now()}-${file.originalname}`           // keep .pdf extension
+                        : `${Date.now()}-${file.originalname.replace(".pdf", "")}`;
+                    const stream = cloudinary.uploader.upload_stream(
+                        {
+                            folder: "campusvoice_posts",
+                            resource_type: isPDF ? "raw" : "auto",
+                            // ❌ remove upload_preset completely
+                            public_id: publicId,
+                        },
+                        (error, result) => {
+                            if (error) reject(error);
+                            else resolve(result);
+                        }
+                    );
+
+                    streamifier.createReadStream(file.buffer).pipe(stream);
+                });
+
+                let fileType = "file";
+
+                if (file.mimetype.startsWith("image/")) {
+                    fileType = "image";
+                } else if (isPDF) {
+                    fileType = "pdf";
+                }
+
+                // ✅ IMPORTANT: force inline PDF rendering
+                let finalUrl = uploadedFile.secure_url;
+
+                if (isPDF) {
+                    finalUrl = finalUrl.replace(
+                        "/upload/",
+                        "/upload/fl_attachment:false/fl_inline/"
+                    );
+                }
+
+                attachments.push({
+                    url: uploadedFile.secure_url,  // plain URL, no transformations needed
+                    fileType
+                });
+            }
         }
 
         const post = await Post.create({
             title,
             body: body || "",
-            community: communityId,
             author: req.user.id,
-            type: type || "text",
+            community,
             flair: flair || "",
-            isAnonymous: isAnonymous || false,
-            attachments: attachments || []
+            isAnonymous: isAnonymous === "true" || isAnonymous === true,
+            link: link || "",
+            attachments,
+            upvotes: [],
+            downvotes: []
         });
 
-        res.status(201).json({ success: true, post });
+        return res.status(201).json({
+            success: true,
+            post
+        });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+        console.error("CREATE POST ERROR:", err);
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 };
 
 
-// ============================
-// GET FEED (PAGINATION)
-// ============================
-exports.getPosts = async (req, res) => {
+const getFeedPosts = async (req, res) => {
     try {
-        const {
-            community,
-            page = 1,
-            limit = 10
-        } = req.query;
-
-        let filter = {};
-
-        if (community) {
-            filter.community = community;
-        }
-
-        const skip = (page - 1) * limit;
+        const filter = req.query.community
+            ? { community: new mongoose.Types.ObjectId(req.query.community) }//converts string → ObjectId.
+            : {};
 
         const posts = await Post.find(filter)
-            .populate("author", "username name")
+            .populate("author", "name rollNumber karma avatar")
             .populate("community", "name slug")
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(Number(limit))
-            .lean();
+            .sort({ createdAt: -1 });
 
-        // ADD KARMA BEFORE SENDING RESPONSE
-        posts.forEach(p => {
-            p.karma = p.upvotes.length - p.downvotes.length;
-        });
-
-        res.json({
-            success: true,
-            page: Number(page),
-            count: posts.length,
-            posts
-        });
+        res.json({ success: true, posts });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({ success: false, message: err.message });
     }
 };
 
-
-// ============================
-// GET POST BY ID
-// ============================
-exports.getPostById = async (req, res) => {
+// ================= GET POST BY ID =================
+const getPostById = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id)
-            .populate("author", "username name")
+            .populate("author", "name rollNumber karma avatar")
             .populate("community", "name slug");
 
         if (!post) {
-            return res.status(404).json({ message: "Not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Not found"
+            });
         }
 
-        res.json({ success: true, post });
+        res.json({
+            success: true,
+            post,
+            voteCount: post.upvotes.length - post.downvotes.length
+        });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+};
+
+// tmrwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+const votePost = async (req, res) => {
+    try {
+        const { type } = req.body;
+        const post = await Post.findById(req.params.id);
+
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: "Post not found"
+            });
+        }
+
+        const userId = req.user.id;
+
+        const hadUpvote = post.upvotes.some(id => id.toString() === userId);
+        const hadDownvote = post.downvotes.some(id => id.toString() === userId);
+
+        post.upvotes = post.upvotes.filter(id => id.toString() !== userId);
+        post.downvotes = post.downvotes.filter(id => id.toString() !== userId);
+
+        let userVote = null;
+
+        if (type === "up") {
+            if (!hadUpvote) {
+                post.upvotes.push(userId);
+                userVote = "up";
+            }
+        }
+
+        if (type === "down") {
+            if (!hadDownvote) {
+                post.downvotes.push(userId);
+                userVote = "down";
+            }
+        }
+
+        await post.save();
+
+        res.json({
+            success: true,
+            upvotes: post.upvotes.length,
+            downvotes: post.downvotes.length,
+            voteCount: post.upvotes.length - post.downvotes.length,
+            userVote
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+};
+
+// ================= SAVE POST =================
+const savePost = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        const id = req.params.id;
+
+        const exists = user.savedPosts.includes(id);
+
+        if (exists) {
+            user.savedPosts = user.savedPosts.filter(p => p.toString() !== id);
+        } else {
+            user.savedPosts.push(id);
+        }
+
+        await user.save();
+
+        res.json({ success: true, saved: !exists });
+
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
 };
 
 
-// ============================
-// UPDATE POST (ONLY OWNER)
-// ============================
-exports.updatePost = async (req, res) => {
+const markSolved = async (req, res) => {/// removveeeee thisssss
     try {
         const post = await Post.findById(req.params.id);
 
         if (!post) {
-            return res.status(404).json({ message: "Not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Not found"
+            });
+        }
+
+        if (!post.isSolved) {
+            post.isSolved = true;
+            await karma.markSolved(post.author);
+        }
+
+        await post.save();
+
+        res.json({ success: true });
+
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+};
+
+// ================= UPDATE POST =================
+const updatePost = async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id);
+
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
         }
 
         if (post.author.toString() !== req.user.id) {
             return res.status(403).json({ message: "Not allowed" });
         }
 
-        post.body = req.body.body || post.body;
+        if (req.body.title) post.title = req.body.title;
+        if (req.body.body) post.body = req.body.body;
 
         await post.save();
 
         res.json({ success: true, post });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 };
 
-
-// ============================
-// DELETE POST (OWNER ONLY)
-// ============================
-exports.deletePost = async (req, res) => {
+// ================= DELETE POST =================
+const deletePost = async (req, res) => {
     try {
-        const post = await Post.findById(req.params.id).populate("community");
+        const post = await Post.findById(req.params.id);
 
         if (!post) {
-            return res.status(404).json({ message: "Not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Post not found"
+            });
         }
 
         const isAuthor = post.author.toString() === req.user.id;
-
-        const isModerator = post.community.moderators.some(
-            id => id.toString() === req.user.id
-        );
+        const isModerator =
+            req.user.role === "admin" ||
+            req.user.role === "moderator";
 
         if (!isAuthor && !isModerator) {
-            return res.status(403).json({ message: "Not allowed" });
+            return res.status(403).json({
+                success: false,
+                message: "Not authorized"
+            });
         }
 
         await Post.findByIdAndDelete(req.params.id);
 
-        res.json({ success: true, message: "Deleted" });
+        res.json({
+            success: true,
+            message: "Post deleted"
+        });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
+};
+
+
+module.exports = {
+    createPost,
+    getFeedPosts,
+    getPostById,
+    votePost,
+    savePost,
+    markSolved,///removee thisss
+    updatePost,
+    deletePost
 };

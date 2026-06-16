@@ -1,62 +1,68 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
-import Signup from "./pages/Signup";
-import Login from "./pages/Login";
-import ProtectedRoute from "./components/ProtectedRoute";
-import MainPage from "./pages/MainPage";
+import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { SocketProvider } from './context/SocketContext';
 
-// TEMP DASHBOARD (you can remove later)
-function Dashboard() {
-  return (
-    <div
-      style={{
-        height: "100vh",
-        background: "#020810",
-        color: "#39ff64",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "monospace",
-      }}
-    >
-      DASHBOARD (TEMP)
+import PrivateRoute from './components/PrivateRoute';
+import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
+
+import Login from './pages/Login';
+import Register from './pages/Signup';
+import Home from './pages/Home';
+import PostDetail from './pages/PostDetail';
+import Communities from './pages/Communities';
+import CommunityDetails from './pages/CommunityDetails';
+import CreateCommunity from "./pages/CreateCommunity";
+import Profile from './pages/Profile';
+import Messages from "./pages/Messages";
+import AdminPanel from "./pages/AdminPanel";
+
+const AppLayout = ({ children }) => (
+  <>
+    <Navbar />
+    <div style={{ display: 'flex' }}>
+      <Sidebar />
+      <main style={{ flex: 1, minHeight: 'calc(100vh - 56px)' }}>
+        {children}
+      </main>
     </div>
-  );
-}
+  </>
+);
 
-function App() {
+function AppRoutes() {
   return (
     <Routes>
-
-      {/* root → signup */}
-      <Route path="/" element={<Navigate to="/signup" />} />
-
-      {/* auth pages */}
-      <Route path="/signup" element={<Signup />} />
+      <Route path="/" element={<Navigate to="/login" />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
 
-      {/* MAIN APP (ALL /main routes inside MainPage) */}
-      <Route
-        path="/main/*"
-        element={
-          <ProtectedRoute>
-            <MainPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/admin" element={<PrivateRoute><AppLayout><AdminPanel /></AppLayout></PrivateRoute>} />
+      <Route path="/home" element={<PrivateRoute><AppLayout><Home /></AppLayout></PrivateRoute>} />
+      <Route path="/communities" element={<PrivateRoute><AppLayout><Communities /></AppLayout></PrivateRoute>} />
+      <Route path="/create-community" element={<PrivateRoute><AppLayout><CreateCommunity /></AppLayout></PrivateRoute>} />
+      <Route path="/community/:slug" element={<PrivateRoute><AppLayout><CommunityDetails /></AppLayout></PrivateRoute>} />
 
-      {/* dashboard optional */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
+      {/* ✅ REMOVED /community/:id/notices — notices live inside CommunityDetails tab */}
 
+      <Route path="/post/:id" element={<PrivateRoute><AppLayout><PostDetail /></AppLayout></PrivateRoute>} />
+      <Route path="/messages" element={<PrivateRoute><AppLayout><Messages /></AppLayout></PrivateRoute>} />
+      <Route path="/profile/:id" element={<Profile />} />
     </Routes>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <SocketProvider>
+          <Toaster position="top-right" />
+          <AppRoutes />
+        </SocketProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
