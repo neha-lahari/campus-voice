@@ -8,7 +8,7 @@ export default function UserCard({ user }) {
 
                 <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden" style={{ border: '1px solid rgba(78,93,120,0.3)', background: 'rgba(6,10,19,0.5)' }}>
                     <img
-                        src={user.avatar || "https://via.placeholder.com/100"}
+                        src={user.avatar || "https://ui-avatars.com/api/?name=" + user.name + "&background=39ff64&color=020810"}
                         alt=""
                         className="w-full h-full object-cover opacity-90"
                     />
