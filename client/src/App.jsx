@@ -44,8 +44,6 @@ function AppRoutes() {
       <Route path="/create-community" element={<PrivateRoute><AppLayout><CreateCommunity /></AppLayout></PrivateRoute>} />
       <Route path="/community/:slug" element={<PrivateRoute><AppLayout><CommunityDetails /></AppLayout></PrivateRoute>} />
 
-      {/* ✅ REMOVED /community/:id/notices — notices live inside CommunityDetails tab */}
-
       <Route path="/post/:id" element={<PrivateRoute><AppLayout><PostDetail /></AppLayout></PrivateRoute>} />
       <Route path="/messages" element={<PrivateRoute><AppLayout><Messages /></AppLayout></PrivateRoute>} />
       <Route path="/profile/:id" element={<Profile />} />

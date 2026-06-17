@@ -24,7 +24,7 @@ export default function SearchOverlay({ onClose }) {
             setLoading(true);
             try {
                 const res = await axios.get(
-                    `http://localhost:5000/api/search?q=${query}`,
+                    `${import.meta.env.VITE_API_URL}/search?q=${query}`,
                     { withCredentials: true }
                 );
                 setResults(res.data);

@@ -12,7 +12,7 @@ export default function ChatWindow({ conversationId, selectedUser }) {
 
         socket.emit("joinConversation", { conversationId });
 
-        fetch(`http://localhost:5000/api/dm/messages/${conversationId}`, {
+        fetch(`${import.meta.env.VITE_API_URL}/dm/messages/${conversationId}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         })
             .then(res => res.json())
