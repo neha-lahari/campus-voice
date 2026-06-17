@@ -62,7 +62,7 @@ app.use("/api/dm", require("./routes/dmRoutes"));
 app.use("/api/comments", require("./routes/commentRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 
-app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/admin", require("./routes/adminroutes"));
 app.use("/api/upload", require("./routes/uploadRoutes"));
 app.use("/api/notices", require("./routes/noticeRoutes"));
 
