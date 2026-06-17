@@ -1,5 +1,5 @@
 const User = require("../models/userModel");
-const CRRequest = require("../models/crRequestModel");
+const CRRequest = require("../models/Crrequestmodel");
 
 exports.submitCRRequest = async (req, res) => {
     try {

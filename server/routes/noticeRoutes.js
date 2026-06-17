@@ -5,7 +5,6 @@ const uploadMiddleware = require("../middleware/uploadMiddleware");
 
 const { upload } = uploadMiddleware;
 
-// BUG FIX: added unarchiveNotice to the import
 const {
     createNotice,
     getNoticesByCommunity,
