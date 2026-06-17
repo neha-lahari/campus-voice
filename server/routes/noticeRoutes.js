@@ -1,43 +1,28 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/authMiddleware");
+const uploadMiddleware = require("../middleware/uploadMiddleware");
 
-// ✅ safe import — works whether uploadMiddleware exports default or named
-let upload;
-try {
-    const uploadMiddleware = require("../middleware/uploadMiddleware");
-    upload = uploadMiddleware.upload || uploadMiddleware;
-} catch (e) {
-    // fallback: no file upload, use multer directly
-    const multer = require("multer");
-    upload = multer({ storage: multer.memoryStorage() });
-}
+const { upload } = uploadMiddleware;
 
+// BUG FIX: added unarchiveNotice to the import
 const {
     createNotice,
     getNoticesByCommunity,
     updateNotice,
     deleteNotice,
     archiveNotice,
+    unarchiveNotice,
     searchNotices
 } = require("../controllers/noticeController");
 
-// ⚠️ SEARCH must be above /:communityId
 router.get("/search/all", searchNotices);
-
-// CREATE
 router.post("/", protect, upload.array("files", 5), createNotice);
 
-// GET BY COMMUNITY
 router.get("/:communityId", getNoticesByCommunity);
-
-// UPDATE
 router.put("/:noticeId", protect, updateNotice);
-
-// DELETE
 router.delete("/:noticeId", protect, deleteNotice);
-
-// ARCHIVE
 router.patch("/:noticeId/archive", protect, archiveNotice);
+router.patch("/:noticeId/unarchive", protect, unarchiveNotice);
 
 module.exports = router;

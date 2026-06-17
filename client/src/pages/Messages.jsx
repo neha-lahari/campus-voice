@@ -17,7 +17,7 @@ export default function Messages() {
     const [text, setText] = useState("");
     const [searching, setSearching] = useState(false);
     const [uploading, setUploading] = useState(false);
-    const [pendingAtt, setPendingAtt] = useState(null); // 👈 file waiting to send
+    const [pendingAtt, setPendingAtt] = useState(null);
     const bottomRef = useRef(null);
     const fileInputRef = useRef(null);
     const currentUserId = useRef(localStorage.getItem("userId")).current;
@@ -155,19 +155,19 @@ export default function Messages() {
         if (att.fileType === "image") {
             return (
                 <a key={i} href={att.url} target="_blank" rel="noreferrer">
-                    <img src={att.url} alt={att.name || "image"}
-                        style={{ maxWidth: 220, borderRadius: 4, marginTop: 6, border: '1px solid #333', display: 'block', cursor: 'pointer' }} />
+                    <img
+                        src={att.url}
+                        alt={att.name || "image"}
+                        className="mt-1.5 block max-w-[220px] rounded cursor-pointer"
+                        style={{ border: '1px solid #333' }}
+                    />
                 </a>
             );
         }
         return (
             <a key={i} href={att.url} target="_blank" rel="noreferrer"
-                style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6,
-                    padding: '6px 12px', fontSize: 11, color: THEME.cyan,
-                    border: `1px solid rgba(0,240,255,0.2)`, background: 'rgba(0,240,255,0.03)',
-                    fontFamily: 'monospace', textDecoration: 'none'
-                }}>
+                className="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1.5 text-[11px] no-underline rounded"
+                style={{ color: THEME.cyan, border: 'rgba(0,240,255,0.2)', background: 'rgba(0,240,255,0.03)', fontFamily: 'monospace' }}>
                 📄 {att.name || att.url?.split('/').pop() || 'FILE'}
             </a>
         );
@@ -180,33 +180,68 @@ export default function Messages() {
                 .msg-input:focus { outline: none; border-color: #00F0FF !important; }
                 .msg-input::placeholder { color: rgba(78,93,120,0.5); }
                 .search-input:focus { outline: none; border-color: #00F0FF !important; }
+                .search-input::placeholder { color: rgba(78,93,120,0.5); }
                 .convo-item:hover { background: rgba(0,240,255,0.03) !important; }
                 .search-result:hover { background: rgba(163,255,18,0.05) !important; }
                 ::-webkit-scrollbar { width: 3px; }
                 ::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.15); border-radius: 2px; }
             `}</style>
 
-            <div style={{ display: 'flex', height: 'calc(100vh - 56px)', background: THEME.bg, fontFamily: "'Share Tech Mono', monospace", overflow: 'hidden' }}>
+            <div
+                className="flex overflow-hidden"
+                style={{ height: 'calc(100vh - 56px)', background: THEME.bg, fontFamily: "'Share Tech Mono', monospace" }}
+            >
 
-                {/* SIDEBAR */}
-                <div style={{ width: 280, flexShrink: 0, borderRight: `1px solid ${THEME.borderMuted}`, display: 'flex', flexDirection: 'column', background: THEME.card }}>
-                    <div style={{ padding: 16, borderBottom: `1px solid ${THEME.borderMuted}` }}>
-                        <p style={{ fontSize: 10, color: THEME.muted, letterSpacing: 3, margin: '0 0 10px 0' }}>DIRECT_CHANNELS</p>
-                        <div style={{ position: 'relative' }}>
-                            <input className="search-input" value={search} onChange={e => setSearch(e.target.value)}
+                {/*  Sidebar  */}
+                <div
+                    className="flex flex-col flex-shrink-0 w-[280px]"
+                    style={{ background: THEME.card, borderRight: `1px solid ${THEME.borderMuted}` }}
+                >
+                    {/* Search header */}
+                    <div className="p-4" style={{ borderBottom: `1px solid ${THEME.borderMuted}` }}>
+                        <p className="text-[10px] tracking-[3px] mb-2.5" style={{ color: THEME.muted }}>
+                            DIRECT_CHANNELS
+                        </p>
+                        <div className="relative">
+                            <input
+                                className="search-input w-full px-3 py-2 text-[11px] transition-all duration-200"
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
                                 placeholder="Search users..."
-                                style={{ width: '100%', padding: '8px 12px', boxSizing: 'border-box', background: 'rgba(6,10,19,0.6)', border: `1px solid ${THEME.borderMuted}`, color: THEME.text, fontSize: 11, fontFamily: "'Share Tech Mono', monospace" }} />
+                                style={{ background: 'rgba(6,10,19,0.6)', border: `1px solid ${THEME.borderMuted}`, color: THEME.text, fontFamily: "'Share Tech Mono', monospace", boxSizing: 'border-box' }}
+                            />
+
+                            {/* Search dropdown */}
                             {search.trim() && (
-                                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: THEME.card, border: `1px solid ${THEME.border}`, zIndex: 50, maxHeight: 220, overflowY: 'auto' }}>
-                                    {searching && <div style={{ padding: '10px 12px', fontSize: 10, color: THEME.muted }}>SCANNING...</div>}
-                                    {!searching && searchResults.length === 0 && <div style={{ padding: '10px 12px', fontSize: 10, color: THEME.muted }}>NO USERS FOUND</div>}
+                                <div
+                                    className="absolute left-0 right-0 top-full z-50 overflow-y-auto max-h-[220px]"
+                                    style={{ background: THEME.card, border: `1px solid ${THEME.border}` }}
+                                >
+                                    {searching && (
+                                        <div className="px-3 py-2.5 text-[10px]" style={{ color: THEME.muted }}>SCANNING...</div>
+                                    )}
+                                    {!searching && searchResults.length === 0 && (
+                                        <div className="px-3 py-2.5 text-[10px]" style={{ color: THEME.muted }}>NO USERS FOUND</div>
+                                    )}
                                     {searchResults.map(u => (
-                                        <div key={u._id} className="search-result" onClick={() => openConversation(u)}
-                                            style={{ padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, borderBottom: `1px solid ${THEME.borderMuted}` }}>
-                                            <div style={{ width: 28, height: 28, background: 'rgba(6,10,19,0.8)', border: '1px solid rgba(78,93,120,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: THEME.cyan, flexShrink: 0, clipPath: 'polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))' }}>{initials(u)}</div>
+                                        <div
+                                            key={u._id}
+                                            className="search-result flex items-center gap-2.5 px-3 py-2.5 cursor-pointer"
+                                            onClick={() => openConversation(u)}
+                                            style={{ borderBottom: `1px solid ${THEME.borderMuted}` }}
+                                        >
+                                            {/* Avatar */}
+                                            <div
+                                                className="w-7 h-7 flex-shrink-0 flex items-center justify-center text-[10px] rounded"
+                                                style={{ background: 'rgba(6,10,19,0.8)', border: '1px solid rgba(78,93,120,0.3)', color: THEME.cyan }}
+                                            >
+                                                {initials(u)}
+                                            </div>
                                             <div>
-                                                <div style={{ fontSize: 11, color: THEME.text }}>{displayName(u)}</div>
-                                                {u.department && <div style={{ fontSize: 10, color: THEME.muted }}>{u.department} · {u.batch}</div>}
+                                                <div className="text-[11px]" style={{ color: THEME.text }}>{displayName(u)}</div>
+                                                {u.department && (
+                                                    <div className="text-[10px]" style={{ color: THEME.muted }}>{u.department} · {u.batch}</div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -215,21 +250,46 @@ export default function Messages() {
                         </div>
                     </div>
 
-                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                    {/* Conversation list */}
+                    <div className="flex-1 overflow-y-auto">
                         {conversations.length === 0 ? (
-                            <div style={{ padding: 24, textAlign: 'center', fontSize: 10, color: THEME.muted, letterSpacing: 2, lineHeight: 2 }}>[ NO ACTIVE<br />CHANNEL PATHS ]</div>
+                            <div className="p-6 text-center text-[10px] tracking-[2px] leading-loose" style={{ color: THEME.muted }}>
+                                [ NO ACTIVE<br />CHANNEL PATHS ]
+                            </div>
                         ) : conversations.map(convo => {
                             const other = getOtherUser(convo);
                             if (!other) return null;
                             const isActive = String(activeConvo.conversationId) === String(convo._id);
                             return (
-                                <div key={convo._id} className="convo-item"
+                                <div
+                                    key={convo._id}
+                                    className="convo-item flex items-center gap-3 px-4 py-3 cursor-pointer"
                                     onClick={() => setActiveConvo({ conversationId: convo._id, user: other })}
-                                    style={{ padding: '12px 16px', borderBottom: `1px solid ${THEME.borderMuted}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, background: isActive ? 'rgba(0,240,255,0.04)' : 'transparent', borderLeft: isActive ? `2px solid ${THEME.cyan}` : '2px solid transparent' }}>
-                                    <div style={{ width: 36, height: 36, flexShrink: 0, background: 'rgba(6,10,19,0.7)', border: `1px solid ${isActive ? THEME.cyan : 'rgba(78,93,120,0.25)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: THEME.cyan, clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>{initials(other)}</div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: 12, color: THEME.text, marginBottom: 2, fontFamily: "'Plus Jakarta Sans'", fontWeight: 600 }}>{displayName(other)}</div>
-                                        <div style={{ fontSize: 10, color: THEME.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    style={{
+                                        borderBottom: `1px solid ${THEME.borderMuted}`,
+                                        background: isActive ? 'rgba(0,240,255,0.04)' : 'transparent',
+                                        borderLeft: isActive ? `2px solid ${THEME.cyan}` : '2px solid transparent',
+                                    }}
+                                >
+                                    {/* Avatar */}
+                                    <div
+                                        className="w-9 h-9 flex-shrink-0 flex items-center justify-center text-[11px] rounded"
+                                        style={{
+                                            background: 'rgba(6,10,19,0.7)',
+                                            border: `1px solid ${isActive ? THEME.cyan : 'rgba(78,93,120,0.25)'}`,
+                                            color: THEME.cyan,
+                                        }}
+                                    >
+                                        {initials(other)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div
+                                            className="text-[12px] mb-0.5 font-semibold truncate"
+                                            style={{ color: THEME.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                                        >
+                                            {displayName(other)}
+                                        </div>
+                                        <div className="text-[10px] truncate" style={{ color: THEME.muted }}>
                                             {convo.lastMessage?.text || (convo.lastMessage?.attachments?.length ? "📎 Attachment" : "...")}
                                         </div>
                                     </div>
@@ -239,39 +299,82 @@ export default function Messages() {
                     </div>
                 </div>
 
-                {/* CHAT PANEL */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {/*  Chat Panel  */}
+                <div className="flex flex-col flex-1 overflow-hidden">
+
+                    {/* Empty state */}
                     {!activeConvo.conversationId ? (
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                            <div style={{ fontSize: 10, color: THEME.muted, letterSpacing: 3 }}>[ SELECT A CHANNEL OR SEARCH A USER TO BEGIN ]</div>
+                        <div className="flex-1 flex items-center justify-center">
+                            <span className="text-[10px] tracking-[3px]" style={{ color: THEME.muted }}>
+                                [ SEARCH A USER TO BEGIN ]
+                            </span>
                         </div>
                     ) : (
                         <>
-                            <div style={{ padding: '14px 20px', background: THEME.card, borderBottom: `1px solid ${THEME.borderMuted}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: THEME.lime }} />
-                                    <span style={{ fontSize: 12, color: THEME.text, letterSpacing: 2, fontFamily: "'Orbitron', monospace" }}>{displayName(activeConvo.user).toUpperCase()}</span>
+            
+                            <div
+                                className="flex items-center justify-between px-5 py-3.5"
+                                style={{ background: THEME.card, borderBottom: `1px solid ${THEME.borderMuted}` }}
+                            >
+                                <div className="flex items-center gap-2.5">
+                                    <span className="w-2 h-2 rounded-full" style={{ background: THEME.lime }} />
+                                    <span
+                                        className="text-[12px] tracking-[2px]"
+                                        style={{ color: THEME.text, fontFamily: "'Orbitron', monospace" }}
+                                    >
+                                        {displayName(activeConvo.user).toUpperCase()}
+                                    </span>
                                 </div>
-                                <span style={{ fontSize: 10, color: THEME.muted, letterSpacing: 2 }}>COMMS_LINK // ACTIVE</span>
+                                <span className="text-[10px] tracking-[2px]" style={{ color: THEME.muted }}>
+                                    COMMS_LINK // ACTIVE
+                                </span>
                             </div>
 
-                            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, background: 'rgba(6,10,19,0.3)' }}>
+                            {/* Messages list */}
+                            <div
+                                className="flex-1 overflow-y-auto flex flex-col gap-2.5 px-5 py-4"
+                                style={{ background: 'rgba(6,10,19,0.3)' }}
+                            >
                                 {messages.length === 0 ? (
-                                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: THEME.muted, letterSpacing: 3 }}>[ NO TRANSMISSION HISTORY RECOVERED ]</div>
+                                    <div className="flex-1 flex items-center justify-center text-[10px] tracking-[3px]" style={{ color: THEME.muted }}>
+                                        [ NO TRANSMISSION HISTORY RECOVERED ]
+                                    </div>
                                 ) : messages.map((m, i) => {
                                     const mine = isMyMessage(m);
                                     const isSeen = mine && m.seenBy?.some(id => String(id) !== String(currentUserId));
                                     return (
-                                        <div key={m._id || i} style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 8 }}>
+                                        <div
+                                            key={m._id || i}
+                                            className={`flex items-end gap-2 ${mine ? 'justify-end' : 'justify-start'}`}
+                                        >
+                                            {/* Other user avatar */}
                                             {!mine && (
-                                                <div style={{ width: 24, height: 24, flexShrink: 0, background: 'rgba(6,10,19,0.8)', border: '1px solid rgba(78,93,120,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: THEME.cyan, clipPath: 'polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))' }}>{initials(activeConvo.user)}</div>
+                                                <div
+                                                    className="w-6 h-6 flex-shrink-0 flex items-center justify-center text-[9px] rounded"
+                                                    style={{ background: 'rgba(6,10,19,0.8)', border: '1px solid rgba(78,93,120,0.3)', color: THEME.cyan }}
+                                                >
+                                                    {initials(activeConvo.user)}
+                                                </div>
                                             )}
-                                            <div style={{ maxWidth: '65%' }}>
-                                                <div style={{ padding: '10px 14px', fontSize: 13, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.6, color: THEME.text, minHeight: 20, background: mine ? THEME.card : 'rgba(6,10,19,0.7)', border: `1px solid ${mine ? 'rgba(0,240,255,0.25)' : 'rgba(78,93,120,0.2)'}`, clipPath: mine ? 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%)' : 'polygon(0 8px, 8px 0, 100% 0, 100% 100%, 0 100%)' }}>
-                                                    {m.text && <p style={{ margin: 0 }}>{m.text}</p>}
+
+                                            {/* Bubble */}
+                                            <div className="max-w-[65%]">
+                                                <div
+                                                    className="px-3.5 py-2.5 text-[13px] leading-relaxed rounded"
+                                                    style={{
+                                                        color: THEME.text,
+                                                        fontFamily: "'Plus Jakarta Sans', sans-serif",
+                                                        background: mine ? THEME.card : 'rgba(6,10,19,0.7)',
+                                                        border: `1px solid ${mine ? 'rgba(0,240,255,0.25)' : 'rgba(78,93,120,0.2)'}`,
+                                                    }}
+                                                >
+                                                    {m.text && <p className="m-0">{m.text}</p>}
                                                     {m.attachments?.map((att, ai) => renderAttachment(att, ai))}
                                                     {mine && (
-                                                        <div style={{ fontSize: 9, color: isSeen ? 'rgba(0,240,255,0.6)' : 'rgba(78,93,120,0.5)', textAlign: 'right', marginTop: 4, letterSpacing: 1, fontFamily: 'monospace' }}>
+                                                        <div
+                                                            className="text-[9px] text-right mt-1 tracking-[1px]"
+                                                            style={{ color: isSeen ? 'rgba(0,240,255,0.6)' : 'rgba(78,93,120,0.5)', fontFamily: 'monospace' }}
+                                                        >
                                                             {isSeen ? "✓✓ SEEN" : "✓ SENT"}
                                                         </div>
                                                     )}
@@ -283,31 +386,87 @@ export default function Messages() {
                                 <div ref={bottomRef} />
                             </div>
 
-                            {/* FILE PREVIEW BEFORE SEND */}
+                            {/* Pending attachment preview */}
                             {pendingAtt && (
-                                <div style={{ padding: '8px 12px', background: 'rgba(0,240,255,0.04)', borderTop: `1px solid rgba(0,240,255,0.15)`, display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div
+                                    className="flex items-center gap-2.5 px-3 py-2"
+                                    style={{ background: 'rgba(0,240,255,0.04)', borderTop: '1px solid rgba(0,240,255,0.15)' }}
+                                >
                                     {pendingAtt.fileType === "image" ? (
-                                        <img src={pendingAtt.url} alt="preview" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, border: '1px solid #333' }} />
+                                        <img src={pendingAtt.url} alt="preview" className="w-12 h-12 object-cover rounded" style={{ border: '1px solid #333' }} />
                                     ) : (
-                                        <span style={{ fontSize: 20 }}>📄</span>
+                                        <span className="text-xl">📄</span>
                                     )}
-                                    <div style={{ flex: 1, fontSize: 10, color: THEME.cyan, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pendingAtt.name}</div>
-                                    <button onClick={() => setPendingAtt(null)} style={{ background: 'none', border: 'none', color: THEME.muted, cursor: 'pointer', fontSize: 14 }}>✕</button>
+                                    <div className="flex-1 text-[10px] truncate" style={{ color: THEME.cyan, fontFamily: 'monospace' }}>
+                                        {pendingAtt.name}
+                                    </div>
+                                    <button
+                                        onClick={() => setPendingAtt(null)}
+                                        className="text-sm bg-transparent border-none cursor-pointer"
+                                        style={{ color: THEME.muted }}
+                                    >
+                                        ✕
+                                    </button>
                                 </div>
                             )}
 
-                            <div style={{ padding: '12px 16px', background: THEME.card, borderTop: `1px solid ${THEME.borderMuted}`, display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*,application/pdf" onChange={handleFileSelect} />
-                                <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
-                                    style={{ background: pendingAtt ? 'rgba(0,240,255,0.08)' : 'none', border: `1px solid ${pendingAtt ? THEME.cyan : THEME.borderMuted}`, color: pendingAtt ? THEME.cyan : THEME.muted, padding: '8px 10px', cursor: 'pointer', fontSize: 14, opacity: uploading ? 0.4 : 1 }}>
+                            {/* Input bar */}
+                            <div
+                                className="flex items-center gap-2 px-4 py-3"
+                                style={{ background: THEME.card, borderTop: `1px solid ${THEME.borderMuted}` }}
+                            >
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                    accept="image/*,application/pdf"
+                                    onChange={handleFileSelect}
+                                />
+
+                                {/* Attach button */}
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploading}
+                                    className="px-2.5 py-2 text-sm cursor-pointer transition-all duration-200 rounded"
+                                    style={{
+                                        background: pendingAtt ? 'rgba(0,240,255,0.08)' : 'none',
+                                        border: `1px solid ${pendingAtt ? THEME.cyan : THEME.borderMuted}`,
+                                        color: pendingAtt ? THEME.cyan : THEME.muted,
+                                        opacity: uploading ? 0.4 : 1,
+                                    }}
+                                >
                                     {uploading ? '⏳' : '📎'}
                                 </button>
-                                <input className="msg-input" value={text} onChange={e => setText(e.target.value)}
+
+                                {/* Text input */}
+                                <input
+                                    className="msg-input flex-1 px-4 py-2.5 text-[13px] rounded transition-all duration-200"
+                                    value={text}
+                                    onChange={e => setText(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && sendMessage()}
                                     placeholder={pendingAtt ? "Add a caption..." : "Type a message..."}
-                                    style={{ flex: 1, padding: '10px 16px', background: 'rgba(6,10,19,0.6)', border: '1px solid rgba(78,93,120,0.2)', color: THEME.text, fontSize: 13, fontFamily: "'Plus Jakarta Sans', sans-serif" }} />
-                                <button onClick={sendMessage} disabled={!text.trim() && !pendingAtt}
-                                    style={{ padding: '10px 20px', background: 'transparent', border: `1px solid ${THEME.lime}`, color: THEME.lime, fontSize: 11, letterSpacing: 3, fontFamily: 'monospace', cursor: (text.trim() || pendingAtt) ? 'pointer' : 'not-allowed', opacity: (text.trim() || pendingAtt) ? 1 : 0.3, clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%)' }}>
+                                    style={{
+                                        background: 'rgba(6,10,19,0.6)',
+                                        border: '1px solid rgba(78,93,120,0.2)',
+                                        color: THEME.text,
+                                        fontFamily: "'Plus Jakarta Sans', sans-serif",
+                                    }}
+                                />
+
+                                {/* Send button */}
+                                <button
+                                    onClick={sendMessage}
+                                    disabled={!text.trim() && !pendingAtt}
+                                    className="px-5 py-2.5 text-[11px] tracking-[3px] rounded transition-all duration-200"
+                                    style={{
+                                        background: 'transparent',
+                                        border: `1px solid ${THEME.lime}`,
+                                        color: THEME.lime,
+                                        fontFamily: 'monospace',
+                                        cursor: (text.trim() || pendingAtt) ? 'pointer' : 'not-allowed',
+                                        opacity: (text.trim() || pendingAtt) ? 1 : 0.3,
+                                    }}
+                                >
                                     SEND
                                 </button>
                             </div>

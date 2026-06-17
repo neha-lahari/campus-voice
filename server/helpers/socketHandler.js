@@ -5,7 +5,6 @@ const Notification = require("../models/notificationModel");
 const User = require("../models/userModel");
 const { createNotification } = require("./createNotification");
 
-// ✅ HELPER: keep only latest 20 notifications per user, delete the rest
 const trimNotifications = async (userId) => {
     try {
         const all = await Notification.find({ user: userId })
@@ -45,11 +44,11 @@ module.exports = (io) => {
 
     io.on("connection", (socket) => {
 
-        console.log("User connected:", socket.user.id);
+        // console.log("User connected:", socket.user.id);
 
         socket.join(`user-${socket.user.id}`);
 
-        // ================= COMMUNITY CHAT =================
+        // community chat
         socket.on("joinCommunity", (communityId) => {
             if (!communityId) return;
             socket.join(`community-${communityId}`);
@@ -76,7 +75,7 @@ module.exports = (io) => {
             }
         });
 
-        // ================= DM CHAT =================
+        // dm chat
         socket.on("joinConversation", ({ conversationId }) => {
             if (!conversationId) return;
             socket.join(`dm-${conversationId}`);
@@ -101,14 +100,12 @@ module.exports = (io) => {
 
                 io.to(`dm-${conversationId}`).emit("newDMMessage", fullMsg);
 
-                // ✅ FIX BUG 1: Send notification to the OTHER person in the conversation
                 const convo = await Conversation.findById(conversationId);
                 const receiverId = convo?.participants?.find(
                     p => p.toString() !== socket.user.id
                 );
 
                 if (receiverId) {
-                    // get sender name for the message
                     const sender = await User.findById(socket.user.id).select("name");
 
                     await createNotification({
@@ -119,7 +116,6 @@ module.exports = (io) => {
                         metadata: { conversationId, senderId: socket.user.id }
                     });
 
-                    // ✅ FIX Q3: trim to keep only latest 20 notifications
                     await trimNotifications(receiverId);
                 }
 
@@ -127,8 +123,7 @@ module.exports = (io) => {
                 console.log("dmMessage error:", err);
             }
         });
-
-        // ================= PIN =================
+        //pin messages
         socket.on("pinMessage", async ({ messageId, communityId }) => {
             try {
                 const pinnedCount = await Message.countDocuments({
@@ -160,8 +155,7 @@ module.exports = (io) => {
                 console.log(err);
             }
         });
-
-        // ================= SEEN =================
+        //seen
         socket.on("seenMessages", async ({ conversationId }) => {
             try {
                 await Message.updateMany(
@@ -179,7 +173,7 @@ module.exports = (io) => {
         });
 
         socket.on("disconnect", () => {
-            console.log("Disconnected:", socket.user.id);
+            // console.log("Disconnected:", socket.user.id);
         });
     });
 };

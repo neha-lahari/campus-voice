@@ -24,7 +24,7 @@ const postSchema = new mongoose.Schema(
             required: true,
         },
 
-        flair: {/// im i relly using thiss, letes seee
+        flair: {
             type: String,
             default: "",
         },
@@ -60,17 +60,9 @@ const postSchema = new mongoose.Schema(
             },
         ],
 
-        isSolved: {///removeeee thisss
-            type: Boolean,
-            default: false,
-        },
     },
     { timestamps: true }
 );
-
-postSchema.virtual("karma").get(function () {////removeee thissss
-    return this.upvotes.length - this.downvotes.length;
-});
 
 module.exports =
     mongoose.models.Post ||

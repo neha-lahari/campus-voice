@@ -77,10 +77,7 @@ const communities = [
 const seedCommunities = async () => {
     try {
 
-        // remove old communities
         await Community.deleteMany();
-
-        // insert new ones
         await Community.insertMany(communities);
 
         console.log("Communities Seeded");

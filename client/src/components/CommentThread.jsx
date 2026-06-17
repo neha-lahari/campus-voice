@@ -51,7 +51,6 @@ function Comment({ comment, postId, depth = 0, onReplyAdded }) {
             className="border-l border-[#4E5D78]/15 pl-4 mt-4 first:mt-0"
             style={{ marginLeft: depth > 0 ? `${depth * 16}px` : '0px' }}
         >
-            {/* NODE CONTROL HEADER */}
             <div className="flex items-center gap-2 font-['Share_Tech_Mono'] text-xs tracking-wide">
                 <button
                     onClick={() => setCollapsed(!collapsed)}
@@ -70,12 +69,10 @@ function Comment({ comment, postId, depth = 0, onReplyAdded }) {
 
             {!collapsed && (
                 <div className="mt-2 space-y-3">
-                    {/* CORE CONTENT BLOCK */}
                     <p className="text-xs leading-relaxed font-['Plus_Jakarta_Sans'] text-[#E5E9F0]/90">
                         {comment.body}
                     </p>
 
-                    {/* METRIC MANIPULATION PANEL */}
                     <div className="flex items-center gap-4 font-['Share_Tech_Mono'] text-[11px] tracking-wider text-[#4E5D78]">
                         <div className="flex items-center gap-1.5">
                             <button
@@ -105,7 +102,6 @@ function Comment({ comment, postId, depth = 0, onReplyAdded }) {
                         </button>
                     </div>
 
-                    {/* DYNAMIC REPLY COMPONENT PANEL */}
                     {showReply && (
                         <div className="pt-1">
                             <CommentBox
@@ -117,7 +113,6 @@ function Comment({ comment, postId, depth = 0, onReplyAdded }) {
                         </div>
                     )}
 
-                    {/* SUB-NODE RECURSION DIRECTORY */}
                     {comment.replies && comment.replies.length > 0 && (
                         <div className="mt-2 space-y-1">
                             {comment.replies.map(reply => (
@@ -137,7 +132,7 @@ function Comment({ comment, postId, depth = 0, onReplyAdded }) {
     );
 }
 
-// build tree safely
+// build tree 
 function buildTree(comments) {
     const map = {};
     const roots = [];

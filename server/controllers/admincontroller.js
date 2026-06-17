@@ -1,7 +1,6 @@
 const User = require("../models/userModel");
 const CRRequest = require("../models/crRequestModel");
 
-// ================= SUBMIT CR REQUEST (student) =================
 exports.submitCRRequest = async (req, res) => {
     try {
         const { reason, community } = req.body;
@@ -9,8 +8,6 @@ exports.submitCRRequest = async (req, res) => {
         if (!reason?.trim()) {
             return res.status(400).json({ message: "Reason is required" });
         }
-
-        // check if already has pending request
         const existing = await CRRequest.findOne({
             user: req.user.id,
             status: "pending"
@@ -20,7 +17,6 @@ exports.submitCRRequest = async (req, res) => {
             return res.status(400).json({ message: "You already have a pending CR request" });
         }
 
-        // check if already CR or admin
         if (req.user.role !== "student") {
             return res.status(400).json({ message: "You are already a CR or admin" });
         }
@@ -37,7 +33,6 @@ exports.submitCRRequest = async (req, res) => {
     }
 };
 
-// ================= GET MY CR REQUEST STATUS (student) =================
 exports.getMyCRRequest = async (req, res) => {
     try {
         const request = await CRRequest.findOne({ user: req.user.id })
@@ -48,7 +43,7 @@ exports.getMyCRRequest = async (req, res) => {
     }
 };
 
-// ================= GET ALL PENDING REQUESTS (admin) =================
+
 exports.getAllCRRequests = async (req, res) => {
     try {
         const { status = "pending" } = req.query;
@@ -64,7 +59,6 @@ exports.getAllCRRequests = async (req, res) => {
     }
 };
 
-// ================= APPROVE REQUEST (admin) =================
 exports.approveCRRequest = async (req, res) => {
     try {
         const request = await CRRequest.findById(req.params.requestId)
@@ -75,10 +69,8 @@ exports.approveCRRequest = async (req, res) => {
             return res.status(400).json({ message: "Request already reviewed" });
         }
 
-        // update user role to cr
         await User.findByIdAndUpdate(request.user._id, { role: "cr" });
 
-        // mark request approved
         request.status = "approved";
         request.reviewedBy = req.user.id;
         request.reviewedAt = new Date();
@@ -90,7 +82,6 @@ exports.approveCRRequest = async (req, res) => {
     }
 };
 
-// ================= REJECT REQUEST (admin) =================
 exports.rejectCRRequest = async (req, res) => {
     try {
         const request = await CRRequest.findById(req.params.requestId);
@@ -111,7 +102,6 @@ exports.rejectCRRequest = async (req, res) => {
     }
 };
 
-// ================= REVOKE CR ROLE (admin) =================
 exports.revokeRole = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -131,7 +121,6 @@ exports.revokeRole = async (req, res) => {
     }
 };
 
-// ================= GET ALL USERS (admin) =================
 exports.getAllUsers = async (req, res) => {
     try {
         const { role, q } = req.query;
@@ -141,7 +130,7 @@ exports.getAllUsers = async (req, res) => {
         if (q) filter.name = { $regex: q, $options: "i" };
 
         const users = await User.find(filter)
-            .select("name email rollNumber department batch role avatar karma createdAt")
+            .select("name email rollNumber department batch role avatar createdAt")
             .sort({ createdAt: -1 });
 
         res.json(users);

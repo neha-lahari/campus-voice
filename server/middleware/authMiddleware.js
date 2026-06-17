@@ -1,4 +1,3 @@
-// middleware/authMiddleware.js
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 
@@ -26,7 +25,6 @@ const protect = async (req, res, next) => {
     }
 };
 
-// ✅ authorize is exported here so pollRoutes and adminRoutes can use it
 const authorize = (...roles) => {
     return (req, res, next) => {
         if (!roles.includes(req.user.role)) {

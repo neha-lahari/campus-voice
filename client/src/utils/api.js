@@ -14,6 +14,4 @@ API.interceptors.request.use((config) => {
     return config;
 });
 
-//This is a custom Axios instance that automatically attaches the JWT token to every request.
-
 export default API;

@@ -45,17 +45,6 @@ const userSchema = new mongoose.Schema({
     },
 
 
-    karma: {// remove them ssoon!!!
-        type: Number,
-        default: 0
-    },
-
-    badges: [///removee themmmm
-        {
-            type: String
-        }
-    ],
-
     isAnonymous: {
         type: Boolean,
         default: false

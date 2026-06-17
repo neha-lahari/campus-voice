@@ -4,8 +4,6 @@ const Post = require("../models/postModel");
 const User = require("../models/userModel");
 const Community = require("../models/communityModel");
 
-const karma = require("../helpers/karma");/// removeee thissss
-
 const streamifier = require("streamifier");
 const cloudinary = require("../config/cloudinary");
 
@@ -38,13 +36,12 @@ const createPost = async (req, res) => {
 
                 const uploadedFile = await new Promise((resolve, reject) => {
                     const publicId = isPDF
-                        ? `${Date.now()}-${file.originalname}`           // keep .pdf extension
+                        ? `${Date.now()}-${file.originalname}`      
                         : `${Date.now()}-${file.originalname.replace(".pdf", "")}`;
                     const stream = cloudinary.uploader.upload_stream(
                         {
                             folder: "campusvoice_posts",
                             resource_type: isPDF ? "raw" : "auto",
-                            // ❌ remove upload_preset completely
                             public_id: publicId,
                         },
                         (error, result) => {
@@ -64,7 +61,7 @@ const createPost = async (req, res) => {
                     fileType = "pdf";
                 }
 
-                // ✅ IMPORTANT: force inline PDF rendering
+                // force inline PDF rendering
                 let finalUrl = uploadedFile.secure_url;
 
                 if (isPDF) {
@@ -75,7 +72,7 @@ const createPost = async (req, res) => {
                 }
 
                 attachments.push({
-                    url: uploadedFile.secure_url,  // plain URL, no transformations needed
+                    url: uploadedFile.secure_url,
                     fileType
                 });
             }
@@ -112,11 +109,11 @@ const createPost = async (req, res) => {
 const getFeedPosts = async (req, res) => {
     try {
         const filter = req.query.community
-            ? { community: new mongoose.Types.ObjectId(req.query.community) }//converts string → ObjectId.
+            ? { community: new mongoose.Types.ObjectId(req.query.community) }
             : {};
 
         const posts = await Post.find(filter)
-            .populate("author", "name rollNumber karma avatar")
+            .populate("author", "name rollNumber avatar")
             .populate("community", "name slug")
             .sort({ createdAt: -1 });
 
@@ -131,7 +128,7 @@ const getFeedPosts = async (req, res) => {
 const getPostById = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id)
-            .populate("author", "name rollNumber karma avatar")
+            .populate("author", "name rollNumber avatar")
             .populate("community", "name slug");
 
         if (!post) {
@@ -155,7 +152,6 @@ const getPostById = async (req, res) => {
     }
 };
 
-// tmrwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
 const votePost = async (req, res) => {
     try {
         const { type } = req.body;
@@ -210,7 +206,6 @@ const votePost = async (req, res) => {
     }
 };
 
-// ================= SAVE POST =================
 const savePost = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
@@ -234,35 +229,6 @@ const savePost = async (req, res) => {
 };
 
 
-const markSolved = async (req, res) => {/// removveeeee thisssss
-    try {
-        const post = await Post.findById(req.params.id);
-
-        if (!post) {
-            return res.status(404).json({
-                success: false,
-                message: "Not found"
-            });
-        }
-
-        if (!post.isSolved) {
-            post.isSolved = true;
-            await karma.markSolved(post.author);
-        }
-
-        await post.save();
-
-        res.json({ success: true });
-
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
-};
-
-// ================= UPDATE POST =================
 const updatePost = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
@@ -290,7 +256,6 @@ const updatePost = async (req, res) => {
     }
 };
 
-// ================= DELETE POST =================
 const deletePost = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
@@ -336,7 +301,6 @@ module.exports = {
     getPostById,
     votePost,
     savePost,
-    markSolved,///removee thisss
     updatePost,
     deletePost
 };

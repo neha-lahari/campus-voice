@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+
 import SearchOverlay from './SearchOverlay';
-import useNotifications from "../hooks/useNotifications";
+import useNotifications from "../utils/useNotifications";
 import { disconnectSocket } from "../socket";
 
 export default function Navbar() {
     const { user, logout } = useAuth();
-    const { theme, toggle } = useTheme();
     const navigate = useNavigate();
 
     const { notifications, unreadCount, markAllRead } = useNotifications();
@@ -34,7 +33,6 @@ export default function Navbar() {
         navigate('/login');
     };
 
-    // ✅ FIX BUG 2: click notification → navigate to its link + mark all read
     const handleNotifClick = (notif) => {
         setShowNotif(false);
         markAllRead();
@@ -57,7 +55,6 @@ export default function Navbar() {
         <>
             <nav className="sticky top-0 z-50 h-14 flex items-center justify-between gap-4 px-6 bg-[#060A13]/95 border-b border-cyan-500/10 backdrop-blur-md">
 
-                {/* Left Side */}
                 <div className="flex items-center gap-5 flex-1 max-w-2xl">
                     <Link to="/" className="flex items-center gap-3 shrink-0 group transition-transform active:scale-95">
                         <div className="w-8 h-8 flex items-center justify-center text-xs font-black rounded bg-[#A3FF12] text-[#060A13] font-['Orbitron'] shadow-[0_0_14px_rgba(163,255,18,0.35)]">
@@ -78,24 +75,16 @@ export default function Navbar() {
                     </div>
                 </div>
 
-                {/* Right Side */}
                 <div className="flex items-center gap-3">
 
-                    {/* Search mobile */}
+                    {/* Search  */}
                     <button
                         onClick={() => setShowSearch(true)}
                         className="sm:hidden w-9 h-9 flex items-center justify-center border border-transparent rounded text-zinc-400 hover:text-[#00F0FF] hover:bg-[#00F0FF]/5 hover:border-[#00F0FF]/30"
                     >
-                        🔍
+                        SEARCH
                     </button>
 
-                    {/* Theme */}
-                    <button
-                        onClick={toggle}
-                        className="w-9 h-9 flex items-center justify-center border border-cyan-500/10 text-[#A3FF12] bg-zinc-950/20 rounded hover:text-[#00F0FF]"
-                    >
-                        {theme === 'dark' ? '☀' : '☾'}
-                    </button>
 
                     {/* Notifications */}
                     <div className="relative">
@@ -117,7 +106,6 @@ export default function Navbar() {
                         {showNotif && (
                             <div className="absolute right-0 mt-3 w-72 bg-[#121824] border border-cyan-500/20 max-h-80 overflow-y-auto z-50">
 
-                                {/* HEADER with mark all read */}
                                 <div className="p-3 border-b border-zinc-800/60 flex items-center justify-between">
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-300">
                                         Notifications
@@ -138,7 +126,6 @@ export default function Navbar() {
                                     </div>
                                 ) : (
                                     notifications.slice(0, 20).map((n) => (
-                                        // ✅ FIX BUG 2: clicking navigates to the notification's link
                                         <div
                                             key={n._id}
                                             onClick={() => handleNotifClick(n)}
@@ -156,7 +143,6 @@ export default function Navbar() {
                         )}
                     </div>
 
-                    {/* User Dropdown */}
                     {user ? (
                         <div className="relative">
                             <button

@@ -9,7 +9,7 @@ export const SocketProvider = ({ children }) => {
 
     useEffect(() => {
         if (user && token) {
-            connectSocket(token); // 👈 pass token directly, don't rely on localStorage
+            connectSocket(token); 
         } else {
             disconnectSocket();
         }

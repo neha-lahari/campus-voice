@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API from "../utils/api";
+import API from "./api";
 import { socket } from "../socket";
 
 export default function useNotifications() {
@@ -7,7 +7,6 @@ export default function useNotifications() {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // LOAD OLD NOTIFICATIONS
     useEffect(() => {
 
         fetchNotifications();

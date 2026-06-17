@@ -16,9 +16,6 @@ const globalSearch = async (req, res) => {
             ? { createdAt: 1 }
             : { createdAt: -1 };
 
-        // ======================
-        // POSTS (FIXED: body not content)
-        // ======================
         const posts = await Post.find({
             $or: [
                 { title: { $regex: q, $options: "i" } },
@@ -30,19 +27,14 @@ const globalSearch = async (req, res) => {
             .limit(Number(limit))
             .skip(skip);
 
-        // ======================
-        // USERS
-        // ======================
+
         const users = await User.find({
             $or: [
                 { name: { $regex: q, $options: "i" } },
                 { rollNumber: { $regex: q, $options: "i" } }
             ]
-        }).select("name avatar karma department batch rollNumber");
+        }).select("name avatar department batch rollNumber");
 
-        // ======================
-        // COMMUNITIES (FIXED + memberCount added)
-        // ======================
         const communitiesRaw = await Community.find({
             $or: [
                 { name: { $regex: q, $options: "i" } },

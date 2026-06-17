@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 import { AuthProvider } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
 import { SocketProvider } from './context/SocketContext';
 
 import PrivateRoute from './components/PrivateRoute';
@@ -56,13 +55,11 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <SocketProvider>
-          <Toaster position="top-right" />
-          <AppRoutes />
-        </SocketProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <SocketProvider>
+        <Toaster position="top-right" />
+        <AppRoutes />
+      </SocketProvider>
+    </AuthProvider>
   );
 }

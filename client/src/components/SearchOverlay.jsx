@@ -47,7 +47,7 @@ export default function SearchOverlay({ onClose }) {
         <div className="fixed inset-0 z-50 bg-[#060A13]/90 backdrop-blur-md flex flex-col items-center pt-24 px-4 font-sans selection:bg-[#A3FF12]/30 selection:text-white">
             <div className="w-full max-w-xl">
 
-                {/* INPUT CONTAINER MODULE */}
+                {/* INPUT  */}
                 <div
                     className="flex items-center gap-3 border border-[#00F0FF]/20 bg-[#121824]/90 px-4 py-3 mb-5 transition-all duration-300 focus-within:border-[#00F0FF] focus-within:shadow-[0_0_15px_rgba(0,240,255,0.15)]"
                     style={{ clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}
@@ -68,7 +68,6 @@ export default function SearchOverlay({ onClose }) {
                     </button>
                 </div>
 
-                {/* LOADING / SEARCHING STATUS */}
                 {loading && (
                     <div className="flex items-center justify-center gap-2 py-4">
                         <span className="w-1.5 h-1.5 bg-[#00F0FF] animate-ping rounded-full" />
@@ -76,7 +75,7 @@ export default function SearchOverlay({ onClose }) {
                     </div>
                 )}
 
-                {/* SEARCH RESULTS MATRIX */}
+                {/* SEARCH RESULTS  */}
                 {results && !loading && (
                     <div
                         className="border border-[#4E5D78]/20 bg-[#121824]/45 overflow-hidden flex flex-col"
@@ -141,7 +140,6 @@ export default function SearchOverlay({ onClose }) {
     );
 }
 
-// STRUCTURAL CONTAINER FOR SECTIONS
 const Section = ({ title, children }) => (
     <div className="border-b border-[#4E5D78]/10 last:border-0">
         <div className="px-4 pt-3 pb-1">
@@ -153,7 +151,6 @@ const Section = ({ title, children }) => (
     </div>
 );
 
-// STRUCTURAL CONTENT ROW Indices
 const ResultRow = ({ primary, secondary, onClick }) => (
     <div
         onClick={onClick}

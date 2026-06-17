@@ -12,8 +12,6 @@ const communitySchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
-    // /post/javascript-basics-for-beginners
-    // like this we have the slug, and we can use it to access the community page like /c/javascript-basics-for-beginners
     description: {
         type: String,
         default: "",

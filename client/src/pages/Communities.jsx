@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom";
 import API from "../utils/api";
 
 const THEME = {
-    bgMainStart: '#060A13',      // Deep Void Navy Start
-    bgMainEnd: '#0B111E',        // Deep Void Navy End
-    bgCard: '#121824',           // Translucent Steel Panel
-    accentPrimary: '#A3FF12',    // Neon Lime
-    accentSecondary: '#00F0FF',  // Cyber Cyan
-    textMain: '#E5E9F0',         // High-Readability Ice Text
-    textMuted: '#4E5D78',        // Technical Gray
+    bgMainStart: '#060A13',
+    bgMainEnd: '#0B111E',
+    bgCard: '#121824',
+    accentPrimary: '#A3FF12',
+    accentSecondary: '#00F0FF',
+    textMain: '#E5E9F0',
+    textMuted: '#4E5D78',
 };
 
 export default function Communities() {
@@ -45,57 +45,60 @@ export default function Communities() {
     const CommunityCard = ({ c }) => (
         <div
             onClick={() => navigate(`/community/${c.slug}`)}
-            className="flex items-center justify-between border px-4 py-3 cursor-pointer transition-all duration-200 group rounded-sm"
-            style={{
-                background: 'rgba(18, 24, 36, 0.7)',
-                borderColor: 'rgba(0, 240, 255, 0.12)',
-            }}
-            onMouseEnter={(e) => {
+            className="flex items-center justify-between px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 group"
+            style={{ background: 'rgba(18,24,36,0.7)', border: '1px solid rgba(0,240,255,0.12)' }}
+            onMouseEnter={e => {
                 e.currentTarget.style.borderColor = THEME.accentSecondary;
-                e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 240, 255, 0.08)';
+                e.currentTarget.style.boxShadow = '0 0 15px rgba(0,240,255,0.08)';
             }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(0, 240, 255, 0.12)';
+            onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'rgba(0,240,255,0.12)';
                 e.currentTarget.style.boxShadow = 'none';
             }}
         >
+            {/* Community info */}
             <div>
-                <p className="font-semibold text-sm tracking-wide transition-colors group-hover:text-[#00F0FF]"
-                    style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: THEME.textMain }}>
+                <p
+                    className="font-semibold text-sm tracking-wide group-hover:text-[#00F0FF] transition-colors"
+                    style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: THEME.textMain }}
+                >
                     {c.name}
                 </p>
-                <p className="text-xs mt-0.5 font-medium" style={{ fontFamily: "'Inter', sans-serif", color: THEME.textMuted }}>
+                <p
+                    className="text-xs mt-0.5"
+                    style={{ fontFamily: "'Inter', sans-serif", color: THEME.textMuted }}
+                >
                     {c.memberCount ?? 0} active members
                 </p>
             </div>
 
+            {/* Join / Leave button */}
             <button
                 onClick={(e) => toggleJoin(e, c._id)}
-                className="text-xs font-bold px-4 py-1.5 border transition-all duration-200 uppercase tracking-wider"
+                className="text-xs font-bold px-4 py-1.5 rounded uppercase tracking-wider transition-all duration-200"
                 style={{
                     fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    background: c.isJoined ? 'transparent' : 'rgba(163, 255, 18, 0.05)',
+                    background: c.isJoined ? 'transparent' : 'rgba(163,255,18,0.05)',
                     color: c.isJoined ? THEME.textMuted : THEME.accentPrimary,
-                    borderColor: c.isJoined ? 'rgba(78, 93, 120, 0.3)' : THEME.accentPrimary,
-                    clipPath: 'polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))'
+                    border: c.isJoined ? '1px solid rgba(78,93,120,0.3)' : `1px solid ${THEME.accentPrimary}`,
                 }}
-                onMouseEnter={(e) => {
+                onMouseEnter={e => {
                     if (c.isJoined) {
                         e.currentTarget.style.color = '#f43f5e';
                         e.currentTarget.style.borderColor = '#f43f5e';
-                        e.currentTarget.style.background = 'rgba(244, 63, 94, 0.05)';
+                        e.currentTarget.style.background = 'rgba(244,63,94,0.05)';
                     } else {
                         e.currentTarget.style.background = THEME.accentPrimary;
                         e.currentTarget.style.color = '#060A13';
                     }
                 }}
-                onMouseLeave={(e) => {
+                onMouseLeave={e => {
                     if (c.isJoined) {
-                        e.currentTarget.style.color = Theme.textMuted;
-                        e.currentTarget.style.borderColor = 'rgba(78, 93, 120, 0.3)';
+                        e.currentTarget.style.color = THEME.textMuted; // BUG FIX: was Theme.textMuted
+                        e.currentTarget.style.borderColor = 'rgba(78,93,120,0.3)';
                         e.currentTarget.style.background = 'transparent';
                     } else {
-                        e.currentTarget.style.background = 'rgba(163, 255, 18, 0.05)';
+                        e.currentTarget.style.background = 'rgba(163,255,18,0.05)';
                         e.currentTarget.style.color = THEME.accentPrimary;
                         e.currentTarget.style.borderColor = THEME.accentPrimary;
                     }
@@ -110,10 +113,9 @@ export default function Communities() {
         <>
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
-                
                 .header-btn:hover {
                     background: #00F0FF !important;
-                    box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+                    box-shadow: 0 0 15px rgba(0,240,255,0.3);
                     color: #060A13 !important;
                 }
             `}</style>
@@ -124,40 +126,38 @@ export default function Communities() {
             >
                 <div className="max-w-2xl mx-auto">
 
-                    {/* TOP ACTION BAR CONTAINER */}
-                    <div className="flex items-center justify-between mb-7 p-2.5 border"
-                        style={{
-                            background: 'rgba(18, 24, 36, 0.8)',
-                            borderColor: 'rgba(0, 240, 255, 0.15)',
-                            clipPath: 'polygon(0 0, 100% 0, calc(100% - 6px) 100%, 6px 100%)'
-                        }}>
-                        <h1 className="text-sm font-bold tracking-[2px] uppercase pl-2"
-                            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: THEME.textMain }}>
+                    {/* Header bar */}
+                    <div
+                        className="flex items-center justify-between mb-7 px-4 py-3 rounded-lg border"
+                        style={{ background: 'rgba(18,24,36,0.8)', borderColor: 'rgba(0,240,255,0.15)' }}
+                    >
+                        <h1
+                            className="text-sm font-bold tracking-[2px] uppercase"
+                            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: THEME.textMain }}
+                        >
                             Communities
                         </h1>
-
                         <button
                             onClick={() => navigate("/create-community")}
-                            className="header-btn px-4 py-1.5 text-xs font-bold tracking-wider uppercase transition-all duration-200 text-[#060A13] bg-[#A3FF12]"
-                            style={{
-                                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                                clipPath: 'polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))'
-                            }}
+                            className="header-btn px-4 py-1.5 text-xs font-bold tracking-wider uppercase rounded transition-all duration-200"
+                            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", background: THEME.accentPrimary, color: '#060A13' }}
                         >
                             + Create New
                         </button>
                     </div>
 
-                    {/* SECTIONS GRID BLOCK */}
+                    {/* Sections */}
                     <div className="flex flex-col gap-6">
 
-                        {/* JOINED STACK MODULE */}
+                        {/* Joined communities */}
                         {joined.length > 0 && (
                             <div>
                                 <div className="flex items-center gap-2 mb-2.5 pl-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                                    <h2 className="text-xs font-bold tracking-[1.5px] uppercase"
-                                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: THEME.accentSecondary }}>
+                                    <h2
+                                        className="text-xs font-bold tracking-[1.5px] uppercase"
+                                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: THEME.accentSecondary }}
+                                    >
                                         My Subscribed Networks
                                     </h2>
                                 </div>
@@ -169,20 +169,27 @@ export default function Communities() {
                             </div>
                         )}
 
-                        {/* DISCOVER STACK MODULE */}
+                        {/* Discover communities */}
                         <div>
                             <div className="flex items-center gap-2 mb-2.5 pl-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
-                                <h2 className="text-xs font-bold tracking-[1.5px] uppercase"
-                                    style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: THEME.textMuted }}>
+                                <h2
+                                    className="text-xs font-bold tracking-[1.5px] uppercase"
+                                    style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: THEME.textMuted }}
+                                >
                                     Explore Channels
                                 </h2>
                             </div>
 
                             {discover.length === 0 ? (
-                                <div className="text-center py-10 border border-dashed rounded-sm"
-                                    style={{ background: THEME.bgCard, borderColor: 'rgba(78, 93, 120, 0.2)' }}>
-                                    <p className="text-xs font-medium" style={{ fontFamily: "'Inter', sans-serif", color: THEME.textMuted }}>
+                                <div
+                                    className="text-center py-10 rounded-lg border border-dashed"
+                                    style={{ background: THEME.bgCard, borderColor: 'rgba(78,93,120,0.2)' }}
+                                >
+                                    <p
+                                        className="text-xs"
+                                        style={{ fontFamily: "'Inter', sans-serif", color: THEME.textMuted }}
+                                    >
                                         No further alternative networks found.
                                     </p>
                                 </div>

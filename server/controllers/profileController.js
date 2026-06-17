@@ -3,8 +3,6 @@ const Post = require("../models/postModel");
 const Comment = require("../models/commentModel");
 const cloudinary = require("../config/cloudinary");
 const streamifier = require("streamifier");
-const getBadges = require("../helpers/getBadges");////removeee thisss
-
 
 
 const getUserProfile = async (req, res) => {
@@ -19,7 +17,7 @@ const getUserProfile = async (req, res) => {
         if (!user) return res.status(404).json({ message: "User not found" });
 
         const posts = await Post.find({ author: userId })
-            .populate("author", "name avatar karma")
+            .populate("author", "name avatar")
             .populate("community", "name slug")
             .sort({ createdAt: -1 });
 
@@ -28,18 +26,15 @@ const getUserProfile = async (req, res) => {
             .populate("post", "title")
             .sort({ createdAt: -1 });
 
-        const badges = getBadges(user.karma || 0);//// removee thiss
 
         res.json({
             _id: user._id,
             name: user.name,
             avatar: user.avatar,
             bio: user.bio,
-            karma: user.karma,
             role: user.role,           // ✅ include role
             department: user.department,
             batch: user.batch,
-            badges,///removee thiss
             createdAt: user.createdAt,
             joinedCommunities: user.joinedCommunities,
             postsCount: posts.length,
@@ -52,13 +47,10 @@ const getUserProfile = async (req, res) => {
     }
 };
 
-// =======================================
-// GET USER POSTS
-// =======================================
 const getUserPosts = async (req, res) => {
     try {
         const posts = await Post.find({ author: req.params.userId })
-            .populate("author", "name avatar karma")
+            .populate("author", "name avatar")
             .populate("community", "name slug")
             .sort({ createdAt: -1 });
         res.json({ posts });
@@ -67,9 +59,6 @@ const getUserPosts = async (req, res) => {
     }
 };
 
-// =======================================
-// GET USER COMMENTS
-// =======================================
 const getUserComments = async (req, res) => {
     try {
         const comments = await Comment.find({ author: req.params.userId })
@@ -82,15 +71,12 @@ const getUserComments = async (req, res) => {
     }
 };
 
-// =======================================
-// GET SAVED POSTS
-// =======================================
 const getSavedPosts = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).populate({
             path: "savedPosts",
             populate: [
-                { path: "author", select: "name avatar karma" },
+                { path: "author", select: "name avatar" },
                 { path: "community", select: "name slug" }
             ]
         });
@@ -101,9 +87,6 @@ const getSavedPosts = async (req, res) => {
     }
 };
 
-// =======================================
-// UPDATE PROFILE
-// =======================================
 const updateProfile = async (req, res) => {
     try {
         const userId = req.user.id;

@@ -74,20 +74,21 @@ export default function CommunityDetails() {
             ? posts
             : posts.filter(p => p.flair === activeFlair);
 
+    // Loading state
     if (!community) {
         return (
             <>
                 <style>{`@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');`}</style>
                 <div
                     className="min-h-screen flex items-center justify-center"
-                    style={{
-                        background: `linear-gradient(to bottom, ${THEME.bgMainStart}, ${THEME.bgMainEnd})`,
-                        fontFamily: "'Share Tech Mono', monospace"
-                    }}
+                    style={{ background: `linear-gradient(to bottom, ${THEME.bgMainStart}, ${THEME.bgMainEnd})` }}
                 >
-                    <div className="text-sm tracking-[2px]" style={{ color: THEME.accentSecondary }}>
+                    <span
+                        className="text-sm tracking-[2px]"
+                        style={{ fontFamily: "'Share Tech Mono', monospace", color: THEME.accentSecondary }}
+                    >
                         Loading...
-                    </div>
+                    </span>
                 </div>
             </>
         );
@@ -99,10 +100,9 @@ export default function CommunityDetails() {
                 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&family=Rajdhani:wght@500;600&display=swap');
                 .tab-btn { transition: all 0.2s ease; }
                 .flair-btn { transition: all 0.2s ease; }
-                .action-trigger { transition: all 0.2s ease; }
-                .action-trigger:hover {
-                    border-color: ${THEME.accentSecondary} !important;
-                    background: rgba(0, 240, 255, 0.02);
+                .create-post-btn:hover {
+                    border-color: #00F0FF !important;
+                    background: rgba(0,240,255,0.02) !important;
                 }
             `}</style>
 
@@ -110,15 +110,12 @@ export default function CommunityDetails() {
                 className="min-h-screen w-full pb-12"
                 style={{ background: `linear-gradient(to bottom, ${THEME.bgMainStart}, ${THEME.bgMainEnd})` }}
             >
-                {/* HEADER */}
                 <div
                     className="w-full border-b pt-8 pb-0"
-                    style={{
-                        background: `linear-gradient(to bottom, #0d1627, ${THEME.bgMainStart})`,
-                        borderColor: 'rgba(0, 240, 255, 0.1)'
-                    }}
+                    style={{ background: `linear-gradient(to bottom, #0d1627, ${THEME.bgMainStart})`, borderColor: 'rgba(0,240,255,0.1)' }}
                 >
                     <div className="max-w-4xl mx-auto px-4">
+
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <h1
@@ -141,23 +138,22 @@ export default function CommunityDetails() {
                                 </p>
                             </div>
 
+                            {/* Join / Leave button */}
                             <button
                                 onClick={handleJoinLeave}
-                                className="px-5 py-1.5 text-[11px] font-bold tracking-[1px] uppercase transition-all duration-200"
+                                className="px-5 py-1.5 text-[11px] font-bold tracking-[1px] uppercase rounded transition-all duration-200 cursor-pointer"
                                 style={{
                                     fontFamily: "'Orbitron', monospace",
                                     background: community.isJoined ? 'transparent' : THEME.accentPrimary,
                                     color: community.isJoined ? '#ff4444' : '#060A13',
-                                    border: community.isJoined ? '1px solid rgba(255, 68, 68, 0.4)' : `1px solid ${THEME.accentPrimary}`,
-                                    clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))',
-                                    cursor: 'pointer'
+                                    border: community.isJoined ? '1px solid rgba(255,68,68,0.4)' : `1px solid ${THEME.accentPrimary}`,
                                 }}
                             >
                                 {community.isJoined ? "Leave" : "Join"}
                             </button>
                         </div>
 
-                        {/* TABS */}
+                        {/* Tabs */}
                         <div className="flex gap-6 mt-8">
                             {TABS.map(tab => {
                                 const isSelected = activeTab === tab;
@@ -169,6 +165,7 @@ export default function CommunityDetails() {
                                         style={{ color: isSelected ? THEME.accentSecondary : THEME.textMuted }}
                                     >
                                         {tab}
+
                                         {isSelected && (
                                             <div
                                                 className="absolute bottom-0 left-0 w-full h-[2px]"
@@ -182,10 +179,8 @@ export default function CommunityDetails() {
                     </div>
                 </div>
 
-                {/* TAB CONTENT */}
                 <div className="max-w-4xl mx-auto px-4 py-6">
 
-                    {/* FEED */}
                     {activeTab === "Feed" && (
                         <>
                             <div className="flex gap-2 flex-wrap mb-5">
@@ -195,11 +190,11 @@ export default function CommunityDetails() {
                                         <button
                                             key={flair}
                                             onClick={() => setActiveFlair(flair)}
-                                            className="flair-btn px-3 py-1 text-xs rounded-none transition-all cursor-pointer"
+                                            className="flair-btn px-3 py-1 text-xs rounded cursor-pointer transition-all duration-200"
                                             style={{
-                                                background: isSelected ? 'rgba(0, 240, 255, 0.08)' : 'transparent',
+                                                background: isSelected ? 'rgba(0,240,255,0.08)' : 'transparent',
                                                 color: isSelected ? THEME.accentSecondary : THEME.textMuted,
-                                                border: isSelected ? `1px solid ${THEME.accentSecondary}` : '1px solid rgba(78, 93, 120, 0.2)'
+                                                border: isSelected ? `1px solid ${THEME.accentSecondary}` : '1px solid rgba(78,93,120,0.2)',
                                             }}
                                         >
                                             {flair}
@@ -210,12 +205,8 @@ export default function CommunityDetails() {
 
                             <button
                                 onClick={() => setShowModal(true)}
-                                className="action-trigger w-full mb-5 py-3 text-left px-4 text-xs tracking-[1px] rounded-none border"
-                                style={{
-                                    background: THEME.bgCard,
-                                    borderColor: 'rgba(0, 240, 255, 0.12)',
-                                    color: THEME.textMuted
-                                }}
+                                className="create-post-btn w-full mb-5 py-3 px-4 text-left text-xs tracking-[1px] rounded-lg border transition-all duration-200 cursor-pointer"
+                                style={{ background: THEME.bgCard, borderColor: 'rgba(0,240,255,0.12)', color: THEME.textMuted }}
                             >
                                 + Create a post...
                             </button>
@@ -237,42 +228,26 @@ export default function CommunityDetails() {
                         </>
                     )}
 
-                    {/* CHAT
-                        ✅ FIX: Removed clipPath — it breaks position:fixed modals inside children */}
                     {activeTab === "Chat" && (
                         <div
-                            className="border"
-                            style={{
-                                borderColor: 'rgba(0, 240, 255, 0.12)',
-                                background: THEME.bgCard
-                            }}
+                            className="rounded-lg border"
+                            style={{ borderColor: 'rgba(0,240,255,0.12)', background: THEME.bgCard }}
                         >
                             <CommunityChat communityId={community._id} userRole={user?.role} />
                         </div>
                     )}
 
-                    {/* NOTICE BOARD
-                        ✅ FIX: Removed clipPath — it was trapping the modal inside the clipped
-                        container, making it render as an inline block instead of a full overlay.
-                        position:fixed children escape normal flow but NOT clip-path boundaries. */}
                     {activeTab === "Notice Board" && (
                         <div
-                            className="border"
-                            style={{
-                                borderColor: 'rgba(0, 240, 255, 0.12)',
-                                background: THEME.bgCard
-                            }}
+                            className="rounded-lg border"
+                            style={{ borderColor: 'rgba(0,240,255,0.12)', background: THEME.bgCard }}
                         >
-                            <NoticeBoard
-                                communityId={community._id}
-                                userRole={user?.role}
-                            />
+                            <NoticeBoard communityId={community._id} userRole={user?.role} />
                         </div>
                     )}
 
                 </div>
 
-                {/* CREATE POST MODAL */}
                 {showModal && (
                     <CreatePostModal
                         communityId={community._id}

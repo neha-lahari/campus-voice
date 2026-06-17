@@ -12,7 +12,7 @@ const messageSchema = new mongoose.Schema(
         attachments: [
             {
                 url: String,
-                fileType: String,  // 👈 changed from "type" to "fileType"
+                fileType: String,
                 name: String
             }
         ],

@@ -2,7 +2,6 @@ const Conversation = require("../models/conversationModel");
 const Message = require("../models/messageModel");
 const { createNotification } = require("../helpers/createNotification");
 
-/* CREATE OR GET CONVERSATION */
 exports.createConversation = async (req, res) => {
     try {
         const { userId } = req.body;
@@ -24,7 +23,6 @@ exports.createConversation = async (req, res) => {
     }
 };
 
-/* GET ALL CONVERSATIONS */
 exports.getConversations = async (req, res) => {
     try {
         const convos = await Conversation.find({
@@ -44,7 +42,6 @@ exports.getConversations = async (req, res) => {
     }
 };
 
-/* GET DM MESSAGES */
 exports.getMessages = async (req, res) => {
     try {
         const messages = await Message.find({
@@ -60,7 +57,6 @@ exports.getMessages = async (req, res) => {
     }
 };
 
-/* SEND DM MESSAGE */
 exports.sendMessage = async (req, res) => {
     try {
         const { conversationId, body } = req.body;
@@ -74,13 +70,11 @@ exports.sendMessage = async (req, res) => {
             body
         });
 
-        // update lastMessage on conversation
         convo.lastMessage = message._id;
         await convo.save();
 
         await message.populate("sender", "name avatar");
 
-        // ✅ NOTIFICATION: notify the other participant
         const receiverId = convo.participants.find(
             p => p.toString() !== req.user.id
         );
@@ -102,7 +96,6 @@ exports.sendMessage = async (req, res) => {
     }
 };
 
-/* GET COMMUNITY MESSAGES */
 exports.getCommunityMessages = async (req, res) => {
     try {
         const messages = await Message.find({

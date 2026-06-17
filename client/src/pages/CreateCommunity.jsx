@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom";
 import API from "../utils/api";
 
 const THEME = {
-    bgMainStart: '#060A13',      // Deep Void Navy Start
-    bgMainEnd: '#0B111E',        // Deep Void Navy End
-    bgCard: '#121824',           // Translucent Steel Panel
-    accentPrimary: '#A3FF12',    // Neon Lime
-    accentSecondary: '#00F0FF',  // Cyber Cyan
-    textMain: '#E5E9F0',         // High-Readability Ice Text
-    textMuted: '#4E5D78',        // Technical Gridline Gray
+    bgMainStart: '#060A13',
+    bgMainEnd: '#0B111E',
+    bgCard: '#121824',
+    accentPrimary: '#A3FF12',
+    accentSecondary: '#00F0FF',
+    textMain: '#E5E9F0',
+    textMuted: '#4E5D78',
 };
 
 export default function CreateCommunity() {
@@ -69,7 +69,6 @@ export default function CreateCommunity() {
                 className="min-h-screen w-full flex items-center justify-center px-4 py-12"
                 style={{ background: `linear-gradient(to bottom, ${THEME.bgMainStart}, ${THEME.bgMainEnd})` }}
             >
-                {/* Main Content Box Frame */}
                 <div
                     className="w-full max-w-xl p-6 sm:p-8"
                     style={{
@@ -79,7 +78,6 @@ export default function CreateCommunity() {
                         boxShadow: '0 30px 70px rgba(0,0,0,0.6)'
                     }}
                 >
-                    {/* Header Layout */}
                     <div className="mb-6 pb-4 border-b" style={{ borderColor: 'rgba(78, 93, 120, 0.15)' }}>
                         <h1
                             className="text-xl font-bold tracking-wide mb-1"
@@ -95,10 +93,8 @@ export default function CreateCommunity() {
                         </p>
                     </div>
 
-                    {/* Data Form Submission View */}
                     <form onSubmit={handleSubmit} className="space-y-5">
 
-                        {/* Community Title Field */}
                         <div>
                             <div className="flex items-center gap-2 mb-2 text-[11px] tracking-[1px]" style={{ fontFamily: "'Share Tech Mono', monospace", color: 'rgba(0, 240, 255, 0.5)' }}>
                                 <span>Community Name</span>
@@ -108,7 +104,7 @@ export default function CreateCommunity() {
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="e.g. DSA Warriors"
+                                placeholder="e.g. DSA Doubts"
                                 className="form-input w-full py-2.5 px-4 text-sm rounded-none border text-[#c8d4e6]"
                                 style={{
                                     background: 'rgba(6, 10, 19, 0.4)',
@@ -119,7 +115,6 @@ export default function CreateCommunity() {
                             />
                         </div>
 
-                        {/* Description Context Area */}
                         <div>
                             <div className="flex items-center gap-2 mb-2 text-[11px] tracking-[1px]" style={{ fontFamily: "'Share Tech Mono', monospace", color: 'rgba(0, 240, 255, 0.5)' }}>
                                 <span>Description</span>
@@ -139,7 +134,6 @@ export default function CreateCommunity() {
                             />
                         </div>
 
-                        {/* Downsized Control Trigger Action */}
                         <div className="pt-2">
                             <button
                                 type="submit"

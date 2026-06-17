@@ -92,15 +92,6 @@ export default function PostDetail() {
         }
     };
 
-    const handleMarkSolved = async () => {//////reemoveeeeeeee thissssssssssssss
-        try {
-            await api.patch(`/posts/${id}/solve`);
-            setPost(prev => ({ ...prev, isSolved: true }));
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
     const handleUpdate = async () => {
         try {
             const res = await api.put(`/posts/${id}`, {
@@ -168,14 +159,12 @@ export default function PostDetail() {
 
             <div className="max-w-3xl mx-auto space-y-5">
 
-                {/* POST CARD */}
                 <div className="p-6"
                     style={{
                         background: THEME.bgCard,
                         border: '1px solid rgba(0,240,255,0.12)'
                     }}>
 
-                    {/* META */}
                     <div className="text-xs mb-4" style={{ color: THEME.textMuted }}>
                         r/{post.community?.name} • {post.isAnonymous ? "Anonymous" : post.author?.name} • {
                             formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })
@@ -220,7 +209,7 @@ export default function PostDetail() {
                                     );
                                 }
 
-                                // PDF (FIXED UI)
+                                // PDF
                                 if (att.fileType === "pdf") {
                                     return (
                                         <div
@@ -261,7 +250,6 @@ export default function PostDetail() {
                         </div>
                     )}
 
-                    {/* ACTIONS */}
                     <div className="flex gap-3 items-center">
 
                         <button onClick={() => handleVote("up")}>▲</button>
@@ -279,11 +267,6 @@ export default function PostDetail() {
                             </>
                         )}
 
-                        {isAuthor && post.flair === "Doubt" && !post.isSolved && (////////removeeeeeeeeethissssssssss
-                            <button onClick={handleMarkSolved}>
-                                Mark Solved
-                            </button>
-                        )}
                     </div>
                 </div>
 

@@ -16,13 +16,3 @@ api.interceptors.request.use((config) => {
 });
 
 export default api;
-
-// Login → token received
-//       ↓
-// Store in localStorage
-//       ↓
-// Axios interceptor reads token
-//       ↓
-// Sends it automatically in every request
-//       ↓
-// Backend verifies via protect middleware

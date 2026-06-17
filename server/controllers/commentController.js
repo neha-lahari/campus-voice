@@ -1,8 +1,7 @@
 const Comment = require('../models/commentModel');
 const Post = require('../models/postModel');
-const { createNotification } = require('../helpers/createNotification');/////seee laterrr
+const { createNotification } = require('../helpers/createNotification');
 
-// ================= CREATE COMMENT =================
 exports.createComment = async (req, res) => {
     try {
         const { postId, body, parentCommentId } = req.body;
@@ -30,9 +29,8 @@ exports.createComment = async (req, res) => {
             parentComment: parentCommentId || null
         });
 
-        await comment.populate("author", "name rollNumber karma avatar");
+        await comment.populate("author", "name rollNumber avatar");
 
-        // ✅ NOTIFICATION: reply to a comment
         if (parentCommentId) {
             const parentComment = await Comment.findById(parentCommentId);
             if (parentComment && parentComment.author.toString() !== req.user.id) {
@@ -45,7 +43,6 @@ exports.createComment = async (req, res) => {
                 });
             }
         }
-        // ✅ NOTIFICATION: new comment on post (notify post author)
         else {
             if (post.author.toString() !== req.user.id) {
                 await createNotification({
@@ -71,7 +68,6 @@ exports.createComment = async (req, res) => {
     }
 };
 
-// ================= GET COMMENTS =================
 exports.getComments = async (req, res) => {
     try {
         const { postId } = req.query;
@@ -84,7 +80,7 @@ exports.getComments = async (req, res) => {
         }
 
         const comments = await Comment.find({ post: postId })
-            .populate("author", "name rollNumber karma avatar")
+            .populate("author", "name rollNumber avatar")
             .sort({ createdAt: 1 });
 
         res.json({
@@ -100,7 +96,6 @@ exports.getComments = async (req, res) => {
     }
 };
 
-// ================= VOTE COMMENT =================
 exports.voteComment = async (req, res) => {
     try {
         const { type } = req.body;

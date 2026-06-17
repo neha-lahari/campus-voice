@@ -26,8 +26,7 @@ const getTimeRemaining = (deadline) => {
     };
 };
 
-// ✅ FIX: was "export default function NoticeBoard(" — wrong name caused double render
-export default function NoticeCard({ notice, isCR, onEdit, onDelete, onArchive }) {
+export default function NoticeCard({ notice, isCR, onEdit, onDelete, onArchive, onUnarchive }) {
     const [timeLeft, setTimeLeft] = useState(null);
 
     useEffect(() => {
@@ -40,6 +39,7 @@ export default function NoticeCard({ notice, isCR, onEdit, onDelete, onArchive }
 
     const typeStyle = TYPE_COLORS[notice.type] || TYPE_COLORS.general;
     const isUrgent = timeLeft && !timeLeft.expired && timeLeft.totalMs < 3 * 60 * 60 * 1000;
+    const isHighPriority = notice.priority === "high";
 
     const countdownText = () => {
         if (!timeLeft) return null;
@@ -52,111 +52,124 @@ export default function NoticeCard({ notice, isCR, onEdit, onDelete, onArchive }
     };
 
     return (
-        <div style={{
-            background: notice.priority === "high" ? 'rgba(255,68,68,0.04)' : '#121824',
-            border: `1px solid ${notice.priority === "high" ? 'rgba(255,68,68,0.25)' : 'rgba(78,93,120,0.15)'}`,
-            padding: '16px 18px',
-            marginBottom: 12,
-            position: 'relative',
-            fontFamily: "'Share Tech Mono', monospace"
-        }}>
-            {/* TOP ROW */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+        <div
+            className="relative p-4 mb-3 rounded-lg"
+            style={{
+                background: isHighPriority ? 'rgba(255,68,68,0.04)' : '#121824',
+                border: `1px solid ${isHighPriority ? 'rgba(255,68,68,0.25)' : 'rgba(78,93,120,0.15)'}`,
+                fontFamily: "'Share Tech Mono', monospace",
+            }}
+        >
+            <div className="flex items-start justify-between gap-2.5 mb-2.5">
 
-                <div style={{ flex: 1 }}>
-                    {/* BADGES */}
-                    <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-                        <span style={{
-                            padding: '2px 8px', fontSize: 9, letterSpacing: 2,
-                            textTransform: 'uppercase',
-                            background: typeStyle.bg, border: `1px solid ${typeStyle.border}`,
-                            color: typeStyle.text
-                        }}>
+                <div className="flex-1">
+                    <div className="flex gap-1.5 mb-2 flex-wrap">
+                        <span
+                            className="px-2 py-0.5 text-[9px] tracking-[2px] uppercase rounded"
+                            style={{ background: typeStyle.bg, border: `1px solid ${typeStyle.border}`, color: typeStyle.text }}
+                        >
                             {notice.type}
                         </span>
-
                         {notice.priority !== "normal" && (
-                            <span style={{
-                                padding: '2px 8px', fontSize: 9, letterSpacing: 2,
-                                textTransform: 'uppercase',
-                                background: 'transparent',
-                                border: `1px solid ${PRIORITY_COLORS[notice.priority]}`,
-                                color: PRIORITY_COLORS[notice.priority]
-                            }}>
+                            <span
+                                className="px-2 py-0.5 text-[9px] tracking-[2px] uppercase rounded"
+                                style={{ border: `1px solid ${PRIORITY_COLORS[notice.priority]}`, color: PRIORITY_COLORS[notice.priority] }}
+                            >
                                 {notice.priority === "high" ? "🔴 HIGH" : "🟡 MEDIUM"}
+                            </span>
+                        )}
+                        {notice.isArchived && (
+                            <span className="px-2 py-0.5 text-[9px] tracking-[2px] uppercase rounded" style={{ border: '1px solid rgba(78,93,120,0.3)', color: '#4E5D78' }}>
+                                ARCHIVED
                             </span>
                         )}
                     </div>
 
-                    {/* TITLE */}
-                    <h3 style={{
-                        margin: 0, fontSize: 14, color: '#E5E9F0',
-                        fontFamily: "'Plus Jakarta Sans', sans-serif",
-                        fontWeight: 600, lineHeight: 1.4
-                    }}>
+                    <h3
+                        className="m-0 text-[14px] font-semibold leading-snug"
+                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#E5E9F0' }}
+                    >
                         {notice.title}
                     </h3>
                 </div>
 
-                {/* CR CONTROLS */}
                 {isCR && (
-                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                        <button onClick={onEdit} style={{
-                            padding: '4px 10px', fontSize: 10,
-                            background: 'transparent', border: '1px solid rgba(0,240,255,0.2)',
-                            color: '#00F0FF', cursor: 'pointer', letterSpacing: 1
-                        }}>EDIT</button>
-                        <button onClick={onArchive} style={{
-                            padding: '4px 10px', fontSize: 10,
-                            background: 'transparent', border: '1px solid rgba(78,93,120,0.3)',
-                            color: '#4E5D78', cursor: 'pointer', letterSpacing: 1
-                        }}>ARCH</button>
-                        <button onClick={onDelete} style={{
-                            padding: '4px 10px', fontSize: 10,
-                            background: 'transparent', border: '1px solid rgba(255,68,68,0.3)',
-                            color: '#FF4444', cursor: 'pointer', letterSpacing: 1
-                        }}>DEL</button>
+                    <div className="flex gap-1.5 flex-shrink-0">
+                        <button
+                            onClick={onEdit}
+                            className="px-2.5 py-1 text-[10px] tracking-[1px] rounded cursor-pointer transition-all duration-150 hover:opacity-80"
+                            style={{ background: 'transparent', border: '1px solid rgba(0,240,255,0.2)', color: '#00F0FF' }}
+                        >
+                            EDIT
+                        </button>
+
+                        {notice.isArchived ? (
+                            <button
+                                onClick={onUnarchive}
+                                className="px-2.5 py-1 text-[10px] tracking-[1px] rounded cursor-pointer transition-all duration-150 hover:opacity-80"
+                                style={{ background: 'transparent', border: '1px solid rgba(163,255,18,0.3)', color: '#A3FF12' }}
+                            >
+                                RESTORE
+                            </button>
+                        ) : (
+                            <button
+                                onClick={onArchive}
+                                className="px-2.5 py-1 text-[10px] tracking-[1px] rounded cursor-pointer transition-all duration-150 hover:opacity-80"
+                                style={{ background: 'transparent', border: '1px solid rgba(78,93,120,0.3)', color: '#4E5D78' }}
+                            >
+                                ARCHIVE
+                            </button>
+                        )}
+
+                        <button
+                            onClick={onDelete}
+                            className="px-2.5 py-1 text-[10px] tracking-[1px] rounded cursor-pointer transition-all duration-150 hover:opacity-80"
+                            style={{ background: 'transparent', border: '1px solid rgba(255,68,68,0.3)', color: '#FF4444' }}
+                        >
+                            DEL
+                        </button>
                     </div>
                 )}
             </div>
 
-            {/* CONTENT */}
-            <p style={{
-                margin: '0 0 12px 0', fontSize: 13, color: 'rgba(229,233,240,0.8)',
-                lineHeight: 1.6, fontFamily: "'Plus Jakarta Sans', sans-serif"
-            }}>
+            <p
+                className="m-0 mb-3 text-[13px] leading-relaxed"
+                style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: 'rgba(229,233,240,0.8)' }}
+            >
                 {notice.content}
             </p>
 
-            {/* FOOTER */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                <span style={{ fontSize: 10, color: '#4E5D78', letterSpacing: 1 }}>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-[10px] tracking-[1px]" style={{ color: '#4E5D78' }}>
                     {notice.createdBy?.name || "Unknown"} · {notice.createdBy?.role || ""}
                 </span>
 
                 {notice.deadline && timeLeft && (
-                    <span style={{
-                        fontSize: isUrgent ? 14 : 11,
-                        fontWeight: isUrgent ? 700 : 400,
-                        color: timeLeft.expired ? '#FF4444' : isUrgent ? '#FF4444' : '#FFA500',
-                        letterSpacing: 1,
-                        transition: 'all 0.3s'
-                    }}>
+                    <span
+                        className="text-[11px] tracking-[1px] transition-all duration-300"
+                        style={{
+                            fontSize: isUrgent ? 14 : 11,
+                            fontWeight: isUrgent ? 700 : 400,
+                            color: timeLeft.expired || isUrgent ? '#FF4444' : '#FFA500',
+                        }}
+                    >
                         ⏳ {countdownText()}
                     </span>
                 )}
             </div>
 
-            {/* ATTACHMENTS */}
+            {/* Attachments */}
             {notice.attachments?.length > 0 && (
-                <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div className="flex gap-2 flex-wrap mt-2.5">
                     {notice.attachments.map((a, i) => (
-                        <a key={i} href={a.url} target="_blank" rel="noreferrer"
-                            style={{
-                                fontSize: 10, color: '#00F0FF',
-                                border: '1px solid rgba(0,240,255,0.2)',
-                                padding: '3px 10px', textDecoration: 'none', letterSpacing: 1
-                            }}>
+                        <a
+                            key={i}
+                            href={a.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1 text-[10px] tracking-[1px] rounded no-underline transition-all duration-150 hover:opacity-80"
+                            style={{ color: '#00F0FF', border: '1px solid rgba(0,240,255,0.2)' }}
+                        >
                             📎 {a.name}
                         </a>
                     ))}

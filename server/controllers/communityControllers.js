@@ -3,10 +3,6 @@ const Post = require("../models/postModel");
 const mongoose = require("mongoose");
 
 
-// =====================================
-// CREATE COMMUNITY
-// POST /api/communities
-// =====================================
 exports.createCommunity = async (req, res) => {
     try {
 
@@ -57,11 +53,6 @@ exports.createCommunity = async (req, res) => {
 };
 
 
-// =====================================
-// GET ALL COMMUNITIES
-// GET /api/communities
-// GET /api/communities?joined=true
-// =====================================
 exports.getCommunities = async (req, res) => {
     try {
 
@@ -112,11 +103,6 @@ exports.getCommunities = async (req, res) => {
     }
 };
 
-
-// =====================================
-// GET COMMUNITY BY SLUG
-// GET /api/communities/:slug
-// =====================================
 exports.getCommunityBySlug = async (req, res) => {
     try {
 
@@ -171,10 +157,6 @@ exports.getCommunityBySlug = async (req, res) => {
 };
 
 
-// =====================================
-// JOIN / LEAVE COMMUNITY
-// POST /api/communities/:id/join
-// =====================================
 exports.joinLeaveCommunity = async (req, res) => {
     try {
 

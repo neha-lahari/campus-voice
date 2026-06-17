@@ -4,8 +4,6 @@ const jwt = require("jsonwebtoken");
 const validator = require("validator");
 const parseRollNumber = require("../helpers/parseRollnumber");
 
-const getBadges = require("../helpers/getBadges");// remove thissssss
-
 const generateToken = (user) => {
     return jwt.sign(
         {
@@ -17,27 +15,6 @@ const generateToken = (user) => {
             expiresIn: "7d"
         }
     );
-};
-
-
-const getLeaderboard = async (req, res) => { //// removeeeee
-
-    try {
-
-        const users = await User.find()
-            .select("name karma avatar")
-            .sort({ karma: -1 })
-            .limit(10);
-
-        res.json(users);
-
-    } catch (err) {
-
-        res.status(500).json({
-            message: err.message
-        });
-
-    }
 };
 
 
@@ -108,7 +85,6 @@ const signup = async (req, res) => {
     }
 };
 
-// ================= LOGIN =================
 const login = async (req, res) => {
     try {
 
@@ -161,7 +137,6 @@ const login = async (req, res) => {
     }
 };
 
-// ================= VERIFY =================
 const verifyUser = async (req, res) => {
 
     res.json({
@@ -170,10 +145,8 @@ const verifyUser = async (req, res) => {
     });
 };
 
-// ================= EXPORTS =================
 module.exports = {
     signup,
     login,
     verifyUser,
-    getLeaderboard
 };

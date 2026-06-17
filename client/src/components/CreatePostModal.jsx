@@ -3,13 +3,15 @@ import api from "../utils/api";
 
 const FLAIRS = ["Doubt", "Resource", "Announcement", "Meme", "News"];
 
-const flairStyles = {
-    Doubt: 'border-red-500/30 text-red-400 hover:bg-red-500/10',
-    Resource: 'border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10',
-    Announcement: 'border-lime-500/30 text-lime-400 hover:bg-lime-500/10',
-    Meme: 'border-purple-500/30 text-purple-400 hover:bg-purple-500/10',
-    News: 'border-amber-500/30 text-amber-400 hover:bg-amber-500/10',
+const THEME = {
+    bgCard: "#121824",
+    textMain: "#E5E9F0",
+    textMuted: "#4E5D78",
+    accent: "#00F0FF",
 };
+
+const inputClass = "w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none focus:border-[#00F0FF] focus:bg-[#00F0FF]/5 placeholder-[#4E5D78]";
+const inputStyle = { background: "rgba(6,10,19,0.4)", border: "1px solid rgba(78,93,120,0.2)", color: THEME.textMain };
 
 export default function CreatePostModal({ communityId, onClose, onPostCreated }) {
     const [flair, setFlair] = useState("");
@@ -22,10 +24,11 @@ export default function CreatePostModal({ communityId, onClose, onPostCreated })
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!title.trim() || loading) return;//this prevents clicking create 4 times so that the post wont get duplicted
+        if (!title.trim() || loading) return;
 
         try {
             setLoading(true);
+
             const formData = new FormData();
             formData.append("title", title);
             formData.append("body", body);
@@ -33,12 +36,12 @@ export default function CreatePostModal({ communityId, onClose, onPostCreated })
             formData.append("flair", flair);
             formData.append("link", link);
             formData.append("isAnonymous", anonymous);
-
             files.forEach((file) => formData.append("file", file));
 
             const res = await api.post("/posts", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
+
             onPostCreated?.(res.data.post);
             onClose();
         } catch (err) {
@@ -53,67 +56,78 @@ export default function CreatePostModal({ communityId, onClose, onPostCreated })
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
             <form
                 onSubmit={handleSubmit}
-                className="w-full max-w-lg p-7 max-h-[90vh] overflow-y-auto bg-[#121824] border border-[#00F0FF]/15 shadow-2xl relative"
-                style={{ clipPath: 'polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px))' }}
+                className="w-full max-w-lg p-7 max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl"
+                style={{ background: THEME.bgCard, border: "1px solid rgba(0,240,255,0.15)" }}
             >
-                {/* HEADER */}
                 <div className="flex justify-between items-center mb-6 pb-3 border-b border-zinc-800/60">
-                    <h2 className="text-sm font-bold tracking-[3px] uppercase font-['Orbitron'] text-[#E5E9F0]">
+                    <h2
+                        className="text-sm font-bold tracking-[3px] uppercase"
+                        style={{ fontFamily: "'Orbitron', monospace", color: THEME.textMain }}
+                    >
                         CREATE NEW POST
                     </h2>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="bg-transparent border-none font-mono text-sm cursor-pointer text-[#4E5D78] hover:text-[#00F0FF] transition-colors"
+                        className="text-sm hover:text-[#00F0FF] transition-colors"
+                        style={{ color: THEME.textMuted, fontFamily: "monospace" }}
                     >
                         ✕
                     </button>
                 </div>
 
-                {/* FORM FIELDS */}
                 <input
-                    type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="ENTER CONTAINER TITLE *"
+                    placeholder="Post title *"
                     required
-                    className="w-full px-4 py-2.5 mb-3.5 bg-[#060A13]/40 border border-[#4E5D78]/20 text-[#E5E9F0] text-sm focus:outline-none focus:border-[#00F0FF] focus:bg-[#00F0FF]/5 transition-all placeholder-zinc-600 font-medium"
+                    className={`${inputClass} mb-3.5`}
+                    style={inputStyle}
                 />
 
                 <textarea
                     value={body}
                     onChange={(e) => setBody(e.target.value)}
-                    placeholder="BODY"
+                    placeholder="Body (optional)"
                     rows={5}
-                    className="w-full px-4 py-2.5 mb-3.5 bg-[#060A13]/40 border border-[#4E5D78]/20 text-[#E5E9F0] text-sm focus:outline-none focus:border-[#00F0FF] focus:bg-[#00F0FF]/5 transition-all placeholder-zinc-600 resize-none font-medium"
+                    className={`${inputClass} mb-3.5 resize-none`}
+                    style={inputStyle}
                 />
 
                 <input
-                    type="url"
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
-                    placeholder="(URL)"
-                    className="w-full px-4 py-2.5 mb-4 bg-[#060A13]/40 border border-[#4E5D78]/20 text-[#E5E9F0] text-sm focus:outline-none focus:border-[#00F0FF] focus:bg-[#00F0FF]/5 transition-all placeholder-zinc-600 font-medium"
+                    placeholder="URL (optional)"
+                    className={`${inputClass} mb-4`}
+                    style={inputStyle}
                 />
 
-                {/* FILE ATTACHMENT */}
-                <div className="mb-5 p-3.5 border border-dashed border-zinc-800 bg-[#060A13]/20">
-                    <label className="block text-[11px] tracking-wider mb-2 font-['Share_Tech_Mono'] text-[#4E5D78]">
-                        ATTACH REGISTRY MEDIA (IMAGES / PDF)
+                {/* File upload */}
+                <div
+                    className="mb-5 p-3.5 rounded-lg border border-dashed"
+                    style={{ background: "rgba(6,10,19,0.2)", borderColor: "rgba(78,93,120,0.3)" }}
+                >
+                    <label
+                        className="block text-[11px] mb-2"
+                        style={{ fontFamily: "'Share Tech Mono', monospace", color: THEME.textMuted }}
+                    >
+                        ATTACH FILE (IMAGE / PDF)
                     </label>
                     <input
                         type="file"
                         multiple
                         accept="image/*,.pdf"
                         onChange={(e) => setFiles(Array.from(e.target.files))}
-                        className="text-xs font-mono text-[#E5E9F0]"
+                        className="text-xs text-[#E5E9F0]"
                     />
                 </div>
 
-                {/* FLAIRS */}
-                <div className="block text-[11px] tracking-wider mb-2 font-['Share_Tech_Mono'] text-[#4E5D78]">
-                    ASSIGN CLASSIFICATION TAG:
-                </div>
+                <p
+                    className="text-[11px] mb-2"
+                    style={{ fontFamily: "'Share Tech Mono', monospace", color: THEME.textMuted }}
+                >
+                    ASSIGN FLAIR:
+                </p>
                 <div className="flex gap-2 flex-wrap mb-5">
                     {FLAIRS.map((f) => {
                         const isSelected = flair === f;
@@ -122,9 +136,9 @@ export default function CreatePostModal({ communityId, onClose, onPostCreated })
                                 key={f}
                                 type="button"
                                 onClick={() => setFlair(isSelected ? "" : f)}
-                                className={`px-3 py-1 font-mono text-[11px] tracking-wider border transition-all uppercase bg-transparent cursor-pointer ${isSelected
-                                    ? 'bg-[#00F0FF]/5 border-[#00F0FF] text-[#00F0FF]'
-                                    : `${flairStyles[f] || 'border-zinc-800'} text-[#4E5D78]`
+                                className={`px-3 py-1 font-mono text-[11px] tracking-wider border rounded transition-all uppercase cursor-pointer ${isSelected
+                                        ? "border-[#00F0FF] text-[#00F0FF] bg-[#00F0FF]/5"
+                                        : "border-[#4E5D78]/30 text-[#4E5D78] hover:bg-[#00F0FF]/5 hover:border-[#00F0FF]/40 hover:text-[#00F0FF]"
                                     }`}
                             >
                                 {f}
@@ -133,25 +147,24 @@ export default function CreatePostModal({ communityId, onClose, onPostCreated })
                     })}
                 </div>
 
-                {/* ANONYMOUS TOGGLE */}
-                <label className="flex items-center gap-2.5 mb-6 text-xs cursor-pointer select-none tracking-wide text-[#E5E9F0]">
+                <label className="flex items-center gap-2 mb-6 text-xs text-[#E5E9F0] cursor-pointer">
                     <input
                         type="checkbox"
                         checked={anonymous}
                         onChange={(e) => setAnonymous(e.target.checked)}
-                        className="w-3.5 h-3.5 border border-[#4E5D78]/40 bg-transparent rounded-none appearance-none checked:bg-[#A3FF12]/10 checked:border-[#A3FF12] text-center checked:after:content-['■'] checked:after:text-[8px] checked:after:text-[#A3FF12] flex items-center justify-center transition-all"
+                        className="accent-[#A3FF12]"
                     />
-                    <span>Post transmission anonymously</span>
+                    Post anonymously
                 </label>
 
-                {/* SUBMIT BUTTON */}
+                {/* Submit */}
                 <button
                     type="submit"
                     disabled={loading || !title.trim()}
-                    className="w-full py-3 text-xs font-bold tracking-[3px] uppercase border border-[#A3FF12] text-[#A3FF12] bg-transparent hover:bg-[#A3FF12]/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all font-['Orbitron'] cursor-pointer"
-                    style={{ clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%)' }}
+                    className="w-full py-3 rounded-lg text-xs font-bold uppercase tracking-[3px] border border-[#00F0FF] text-[#00F0FF] hover:bg-[#00F0FF]/10 disabled:opacity-40 transition-all duration-200"
+                    style={{ fontFamily: "'Orbitron', monospace" }}
                 >
-                    {loading ? "[ TRANSMITTING... ]" : "[ POST ]"}
+                    {loading ? "[ POSTING... ]" : "[ POST ]"}
                 </button>
             </form>
         </div>

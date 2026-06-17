@@ -4,7 +4,6 @@ const cloudinary = require("../config/cloudinary");
 const streamifier = require("streamifier");
 const { createNotification } = require("../helpers/createNotification");
 
-// ================= HELPERS =================
 const createReminders = (deadline) => {
     if (!deadline) return [];
     const d = new Date(deadline);
@@ -26,7 +25,6 @@ const uploadToCloudinary = (buffer, originalname) => {
     });
 };
 
-// ================= CREATE =================
 exports.createNotice = async (req, res) => {
     try {
         const role = normalizeRole(req.user?.role);
@@ -66,17 +64,15 @@ exports.createNotice = async (req, res) => {
 
         const populated = await notice.populate("createdBy", "name role");
 
-        // ✅ NOTIFICATION: alert all community members about new notice
         try {
             const community = await Community.findById(communityId);
             if (community?.members?.length) {
                 for (const memberId of community.members) {
-                    // don't notify the creator themselves
                     if (memberId.toString() !== req.user.id) {
                         await createNotification({
                             userId: memberId,
                             type: "NOTICE",
-                            message: `📢 New notice in ${community.name}: "${title}"`,
+                            message: `NEW NOTICE! in ${community.name}: "${title}"`,
                             link: `/community/${community.slug}`,
                             metadata: { noticeId: notice._id, communityId }
                         });
@@ -84,7 +80,6 @@ exports.createNotice = async (req, res) => {
                 }
             }
         } catch (notifErr) {
-            // don't fail the whole request if notification fails
             console.error("Notice notification error:", notifErr.message);
         }
 
@@ -95,23 +90,30 @@ exports.createNotice = async (req, res) => {
     }
 };
 
-// ================= GET BY COMMUNITY =================
 exports.getNoticesByCommunity = async (req, res) => {
     try {
-        const { type, includeArchived, q } = req.query;
+        const { type, archived, q } = req.query;
 
         let filter = {
             community: req.params.communityId,
             isDeleted: false
         };
 
-        if (includeArchived !== "true") filter.isArchived = false;
-        if (type && type !== "all") filter.type = type.toLowerCase();
+        // ARCHIVE 
+        if (archived === "true") {
+            filter.isArchived = true;
+        } else {
+            filter.isArchived = false;
+        }
+
+        if (type && type !== "all") {
+            filter.type = type.toLowerCase();
+        }
 
         let notices = await Notice.find(filter)
-            .populate("createdBy", "name role")
-            .sort({ createdAt: -1 });
+            .populate("createdBy", "name role");
 
+        // search
         if (q) {
             const query = q.toLowerCase();
             notices = notices.filter(n =>
@@ -121,18 +123,19 @@ exports.getNoticesByCommunity = async (req, res) => {
         }
 
         const priorityOrder = { high: 1, medium: 2, normal: 3 };
+
         notices.sort((a, b) =>
             (priorityOrder[a.priority] - priorityOrder[b.priority]) ||
             (new Date(b.createdAt) - new Date(a.createdAt))
         );
 
         res.json({ notices });
+
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
-// ================= UPDATE =================
 exports.updateNotice = async (req, res) => {
     try {
         const notice = await Notice.findById(req.params.noticeId);
@@ -161,7 +164,6 @@ exports.updateNotice = async (req, res) => {
     }
 };
 
-// ================= SOFT DELETE =================
 exports.deleteNotice = async (req, res) => {
     try {
         const notice = await Notice.findById(req.params.noticeId);
@@ -180,7 +182,6 @@ exports.deleteNotice = async (req, res) => {
     }
 };
 
-// ================= ARCHIVE =================
 exports.archiveNotice = async (req, res) => {
     try {
         const notice = await Notice.findById(req.params.noticeId);
@@ -199,7 +200,6 @@ exports.archiveNotice = async (req, res) => {
     }
 };
 
-// ================= SEARCH =================
 exports.searchNotices = async (req, res) => {
     try {
         const { q, community } = req.query;
@@ -217,6 +217,27 @@ exports.searchNotices = async (req, res) => {
         }).populate("createdBy", "name role");
 
         res.json({ notices });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.unarchiveNotice = async (req, res) => {
+    try {
+        const notice = await Notice.findById(req.params.noticeId);
+        if (!notice) return res.status(404).json({ message: "Not found" });
+
+        const role = normalizeRole(req.user?.role);
+
+        if (notice.createdBy.toString() !== req.user.id && role !== "admin") {
+            return res.status(403).json({ message: "Not allowed" });
+        }
+
+        notice.isArchived = false;
+        await notice.save();
+
+        res.json({ message: "Unarchived successfully" });
+
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

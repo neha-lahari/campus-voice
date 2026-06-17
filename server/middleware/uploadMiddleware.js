@@ -1,6 +1,6 @@
 const multer = require("multer");
 
-const storage = multer.memoryStorage();//creation of the storage engine, RAM
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
     const allowedTypes = [

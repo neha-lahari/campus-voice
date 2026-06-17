@@ -15,6 +15,12 @@ const STATUS_CONFIG = {
     rejected: { color: '#FF4444', border: 'rgba(255,68,68,0.3)', label: 'REJECTED' },
 };
 
+const ROLE_COLOR = {
+    admin: '#FF4444',
+    cr: '#A3FF12',
+    student: '#4E5D78',
+};
+
 export default function AdminPanel() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -26,7 +32,6 @@ export default function AdminPanel() {
     const [userSearch, setUserSearch] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // redirect non-admins
     useEffect(() => {
         if (user && user.role !== "admin") navigate("/home");
     }, [user]);
@@ -94,43 +99,29 @@ export default function AdminPanel() {
                 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Share+Tech+Mono&family=Plus+Jakarta+Sans:wght@400;600&display=swap');
                 .admin-input:focus { outline: none; border-color: #00F0FF !important; }
                 .admin-input::placeholder { color: rgba(78,93,120,0.4); }
-                ::-webkit-scrollbar { width: 3px; }
-                ::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.15); }
             `}</style>
 
-            <div style={{
-                minHeight: '100vh', background: THEME.bg, padding: '32px 24px',
-                fontFamily: "'Share Tech Mono', monospace"
-            }}>
-                <div style={{ maxWidth: 900, margin: '0 auto' }}>
+            <div className="min-h-screen py-8 px-6" style={{ background: THEME.bg, fontFamily: "'Share Tech Mono', monospace" }}>
+                <div className="max-w-4xl mx-auto">
 
-                    {/* HEADER */}
-                    <div style={{ marginBottom: 28 }}>
-                        <p style={{ fontSize: 11, color: THEME.muted, letterSpacing: 3, margin: '0 0 4px 0' }}>
-                            SYSTEM ACCESS
-                        </p>
-                        <h1 style={{
-                            fontSize: 22, color: THEME.text, margin: 0,
-                            fontFamily: "'Orbitron', monospace", letterSpacing: 2
-                        }}>
+                    <div className="mb-7">
+                        <p className="text-[11px] tracking-[3px] mb-1" style={{ color: THEME.muted }}>SYSTEM ACCESS</p>
+                        <h1 className="text-2xl tracking-[2px]" style={{ fontFamily: "'Orbitron', monospace", color: THEME.text }}>
                             ADMIN PANEL
                         </h1>
                     </div>
 
-                    {/* TABS */}
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+                    <div className="flex gap-2 mb-6">
                         {["requests", "users"].map(t => (
                             <button
                                 key={t}
                                 onClick={() => setTab(t)}
+                                className="px-5 py-2 text-[10px] tracking-[3px] uppercase cursor-pointer transition-all duration-150 rounded"
                                 style={{
-                                    padding: '8px 20px', fontSize: 10, letterSpacing: 3,
-                                    textTransform: 'uppercase', cursor: 'pointer',
                                     background: tab === t ? 'rgba(0,240,255,0.08)' : 'transparent',
                                     border: `1px solid ${tab === t ? THEME.cyan : THEME.borderMuted}`,
                                     color: tab === t ? THEME.cyan : THEME.muted,
                                     fontFamily: "'Share Tech Mono', monospace",
-                                    transition: 'all 0.15s'
                                 }}
                             >
                                 {t === "requests" ? "CR REQUESTS" : "ALL USERS"}
@@ -138,22 +129,20 @@ export default function AdminPanel() {
                         ))}
                     </div>
 
-                    {/* ===== CR REQUESTS TAB ===== */}
+                    {/*  CR Requests tab  */}
                     {tab === "requests" && (
                         <>
-                            {/* STATUS FILTER */}
-                            <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+                            <div className="flex gap-2 mb-5">
                                 {["pending", "approved", "rejected"].map(s => (
                                     <button
                                         key={s}
                                         onClick={() => setStatusFilter(s)}
+                                        className="px-4 py-1.5 text-[10px] tracking-[2px] uppercase cursor-pointer rounded transition-all duration-150"
                                         style={{
-                                            padding: '5px 14px', fontSize: 10, letterSpacing: 2,
-                                            textTransform: 'uppercase', cursor: 'pointer',
-                                            background: statusFilter === s ? `rgba(${s === 'pending' ? '255,165,0' : s === 'approved' ? '163,255,18' : '255,68,68'},0.08)` : 'transparent',
+                                            background: statusFilter === s ? `${STATUS_CONFIG[s].color}15` : 'transparent',
                                             border: `1px solid ${statusFilter === s ? STATUS_CONFIG[s].border : THEME.borderMuted}`,
                                             color: statusFilter === s ? STATUS_CONFIG[s].color : THEME.muted,
-                                            fontFamily: "'Share Tech Mono', monospace"
+                                            fontFamily: "'Share Tech Mono', monospace",
                                         }}
                                     >
                                         {s}
@@ -161,187 +150,163 @@ export default function AdminPanel() {
                                 ))}
                             </div>
 
-                            {loading ? (
-                                <p style={{ fontSize: 10, color: THEME.muted, letterSpacing: 3 }}>LOADING...</p>
-                            ) : requests.length === 0 ? (
-                                <p style={{ fontSize: 10, color: THEME.muted, letterSpacing: 3, textAlign: 'center', padding: 40 }}>
+                            {loading && (
+                                <p className="text-[10px] tracking-[3px]" style={{ color: THEME.muted }}>LOADING...</p>
+                            )}
+
+                            {!loading && requests.length === 0 && (
+                                <p className="text-center py-10 text-[10px] tracking-[3px]" style={{ color: THEME.muted }}>
                                     [ NO {statusFilter.toUpperCase()} REQUESTS ]
                                 </p>
-                            ) : (
-                                requests.map(req => (
-                                    <div key={req._id} style={{
-                                        background: THEME.card, marginBottom: 12,
-                                        border: `1px solid ${THEME.borderMuted}`,
-                                        padding: '16px 20px'
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                                            <div style={{ flex: 1 }}>
-                                                {/* USER INFO */}
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                                                    <div style={{
-                                                        width: 36, height: 36, background: 'rgba(6,10,19,0.8)',
-                                                        border: `1px solid rgba(78,93,120,0.3)`,
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        fontSize: 11, color: THEME.cyan, flexShrink: 0,
-                                                        clipPath: 'polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px))'
-                                                    }}>
-                                                        {req.user?.name?.substring(0, 2).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <p style={{ margin: 0, fontSize: 13, color: THEME.text, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600 }}>
-                                                            {req.user?.name}
-                                                        </p>
-                                                        <p style={{ margin: 0, fontSize: 10, color: THEME.muted }}>
-                                                            {req.user?.email} · {req.user?.department} {req.user?.batch}
-                                                        </p>
-                                                    </div>
-                                                </div>
+                            )}
 
-                                                {/* COMMUNITY */}
-                                                {req.community && (
-                                                    <p style={{ margin: '0 0 6px 0', fontSize: 11, color: THEME.cyan }}>
-                                                        CLASS: {req.community}
-                                                    </p>
-                                                )}
-
-                                                {/* REASON */}
-                                                <p style={{ margin: 0, fontSize: 12, color: 'rgba(229,233,240,0.7)', fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1.5 }}>
-                                                    {req.reason}
-                                                </p>
-
-                                                <p style={{ margin: '8px 0 0 0', fontSize: 10, color: THEME.muted }}>
-                                                    {new Date(req.createdAt).toLocaleDateString()}
-                                                </p>
+                            {!loading && requests.map(req => (
+                                <div
+                                    key={req._id}
+                                    className="flex items-start justify-between gap-4 p-5 mb-3 rounded-lg"
+                                    style={{ background: THEME.card, border: `1px solid ${THEME.borderMuted}` }}
+                                >
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div
+                                                className="w-9 h-9 flex-shrink-0 flex items-center justify-center text-[11px] rounded"
+                                                style={{ background: 'rgba(6,10,19,0.8)', border: '1px solid rgba(78,93,120,0.3)', color: THEME.cyan }}
+                                            >
+                                                {req.user?.name?.substring(0, 2).toUpperCase()}
                                             </div>
-
-                                            {/* ACTIONS */}
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-                                                {/* STATUS BADGE */}
-                                                <span style={{
-                                                    padding: '3px 12px', fontSize: 9, letterSpacing: 2,
-                                                    border: `1px solid ${STATUS_CONFIG[req.status].border}`,
-                                                    color: STATUS_CONFIG[req.status].color,
-                                                    textAlign: 'center'
-                                                }}>
-                                                    {STATUS_CONFIG[req.status].label}
-                                                </span>
-
-                                                {req.status === "pending" && (
-                                                    <>
-                                                        <button onClick={() => approve(req._id)} style={{
-                                                            padding: '7px 16px', fontSize: 10, letterSpacing: 2,
-                                                            background: 'rgba(163,255,18,0.08)',
-                                                            border: '1px solid rgba(163,255,18,0.4)',
-                                                            color: '#A3FF12', cursor: 'pointer',
-                                                            fontFamily: "'Share Tech Mono', monospace"
-                                                        }}>
-                                                            ✓ APPROVE
-                                                        </button>
-                                                        <button onClick={() => reject(req._id)} style={{
-                                                            padding: '7px 16px', fontSize: 10, letterSpacing: 2,
-                                                            background: 'transparent',
-                                                            border: '1px solid rgba(255,68,68,0.3)',
-                                                            color: '#FF4444', cursor: 'pointer',
-                                                            fontFamily: "'Share Tech Mono', monospace"
-                                                        }}>
-                                                            ✕ REJECT
-                                                        </button>
-                                                    </>
-                                                )}
+                                            <div>
+                                                <p className="text-[13px] font-semibold m-0" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: THEME.text }}>
+                                                    {req.user?.name}
+                                                </p>
+                                                <p className="text-[10px] m-0" style={{ color: THEME.muted }}>
+                                                    {req.user?.email} · {req.user?.department} {req.user?.batch}
+                                                </p>
                                             </div>
                                         </div>
+
+                                        {req.community && (
+                                            <p className="text-[11px] mb-1.5" style={{ color: THEME.cyan }}>
+                                                CLASS: {req.community}
+                                            </p>
+                                        )}
+
+                                        <p className="text-[12px] leading-relaxed m-0" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: 'rgba(229,233,240,0.7)' }}>
+                                            {req.reason}
+                                        </p>
+
+                                        <p className="text-[10px] mt-2 m-0" style={{ color: THEME.muted }}>
+                                            {new Date(req.createdAt).toLocaleDateString()}
+                                        </p>
                                     </div>
-                                ))
-                            )}
+
+                                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                                        <span
+                                            className="px-3 py-1 text-[9px] tracking-[2px] rounded"
+                                            style={{ border: `1px solid ${STATUS_CONFIG[req.status].border}`, color: STATUS_CONFIG[req.status].color }}
+                                        >
+                                            {STATUS_CONFIG[req.status].label}
+                                        </span>
+
+                                        {req.status === "pending" && (
+                                            <>
+                                                <button
+                                                    onClick={() => approve(req._id)}
+                                                    className="px-4 py-1.5 text-[10px] tracking-[2px] rounded cursor-pointer transition-all duration-150 hover:opacity-80"
+                                                    style={{ background: 'rgba(163,255,18,0.08)', border: '1px solid rgba(163,255,18,0.4)', color: '#A3FF12', fontFamily: "'Share Tech Mono', monospace" }}
+                                                >
+                                                    ✓ APPROVE
+                                                </button>
+                                                <button
+                                                    onClick={() => reject(req._id)}
+                                                    className="px-4 py-1.5 text-[10px] tracking-[2px] rounded cursor-pointer transition-all duration-150 hover:opacity-80"
+                                                    style={{ background: 'transparent', border: '1px solid rgba(255,68,68,0.3)', color: '#FF4444', fontFamily: "'Share Tech Mono', monospace" }}
+                                                >
+                                                    ✕ REJECT
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
                         </>
                     )}
 
-                    {/* ===== USERS TAB ===== */}
+                    {/* ── Users tab ── */}
                     {tab === "users" && (
                         <>
-                            <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+                            {/* Search bar */}
+                            <div className="flex gap-2 mb-5">
                                 <input
-                                    className="admin-input"
+                                    className="admin-input flex-1 px-4 py-2.5 text-[12px] rounded transition-all duration-200"
                                     placeholder="Search users by name..."
                                     value={userSearch}
                                     onChange={e => setUserSearch(e.target.value)}
                                     onKeyDown={e => e.key === "Enter" && fetchUsers()}
-                                    style={{
-                                        flex: 1, padding: '9px 14px', fontSize: 12,
-                                        background: THEME.card, border: `1px solid ${THEME.borderMuted}`,
-                                        color: THEME.text, fontFamily: "'Share Tech Mono', monospace"
-                                    }}
+                                    style={{ background: THEME.card, border: `1px solid ${THEME.borderMuted}`, color: THEME.text, fontFamily: "'Share Tech Mono', monospace" }}
                                 />
-                                <button onClick={fetchUsers} style={{
-                                    padding: '9px 20px', fontSize: 10, letterSpacing: 2,
-                                    background: 'transparent', border: `1px solid ${THEME.borderMuted}`,
-                                    color: THEME.muted, cursor: 'pointer',
-                                    fontFamily: "'Share Tech Mono', monospace"
-                                }}>
+                                <button
+                                    onClick={fetchUsers}
+                                    className="px-5 text-[10px] tracking-[2px] uppercase rounded cursor-pointer transition-all duration-150 hover:opacity-80"
+                                    style={{ background: 'transparent', border: `1px solid ${THEME.borderMuted}`, color: THEME.muted, fontFamily: "'Share Tech Mono', monospace" }}
+                                >
                                     SEARCH
                                 </button>
                             </div>
 
-                            {loading ? (
-                                <p style={{ fontSize: 10, color: THEME.muted, letterSpacing: 3 }}>LOADING...</p>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    {users.map(u => {
-                                        const rc = { admin: '#FF4444', cr: '#A3FF12', student: '#4E5D78' };
-                                        return (
-                                            <div key={u._id} style={{
-                                                background: THEME.card, padding: '14px 18px',
-                                                border: `1px solid ${THEME.borderMuted}`,
-                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12
-                                            }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                    <div style={{
-                                                        width: 32, height: 32, background: 'rgba(6,10,19,0.8)',
-                                                        border: `1px solid rgba(78,93,120,0.3)`,
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        fontSize: 10, color: THEME.cyan,
-                                                        clipPath: 'polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px))'
-                                                    }}>
-                                                        {u.name?.substring(0, 2).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <p style={{ margin: 0, fontSize: 13, color: THEME.text, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600 }}>
-                                                            {u.name}
-                                                        </p>
-                                                        <p style={{ margin: 0, fontSize: 10, color: THEME.muted }}>
-                                                            {u.department} · {u.batch} · karma {u.karma}
-                                                        </p>
-                                                    </div>
+                            {loading && (
+                                <p className="text-[10px] tracking-[3px]" style={{ color: THEME.muted }}>LOADING...</p>
+                            )}
+
+                            {!loading && (
+                                <div className="flex flex-col gap-2">
+                                    {users.map(u => (
+                                        <div
+                                            key={u._id}
+                                            className="flex items-center justify-between gap-3 px-5 py-3.5 rounded-lg"
+                                            style={{ background: THEME.card, border: `1px solid ${THEME.borderMuted}` }}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    className="w-8 h-8 flex-shrink-0 flex items-center justify-center text-[10px] rounded"
+                                                    style={{ background: 'rgba(6,10,19,0.8)', border: '1px solid rgba(78,93,120,0.3)', color: THEME.cyan }}
+                                                >
+                                                    {u.name?.substring(0, 2).toUpperCase()}
                                                 </div>
-
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <span style={{
-                                                        padding: '3px 12px', fontSize: 9, letterSpacing: 2,
-                                                        border: `1px solid ${rc[u.role]}40`,
-                                                        color: rc[u.role], fontFamily: "'Orbitron', monospace"
-                                                    }}>
-                                                        {u.role.toUpperCase()}
-                                                    </span>
-
-                                                    {u.role === "cr" && (
-                                                        <button onClick={() => revokeRole(u._id)} style={{
-                                                            padding: '5px 12px', fontSize: 9, letterSpacing: 1,
-                                                            background: 'transparent',
-                                                            border: '1px solid rgba(255,68,68,0.3)',
-                                                            color: '#FF4444', cursor: 'pointer',
-                                                            fontFamily: "'Share Tech Mono', monospace"
-                                                        }}>
-                                                            REVOKE
-                                                        </button>
-                                                    )}
+                                                <div>
+                                                    <p className="text-[13px] font-semibold m-0" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: THEME.text }}>
+                                                        {u.name}
+                                                    </p>
+                                                    <p className="text-[10px] m-0" style={{ color: THEME.muted }}>
+                                                        {u.department} · {u.batch} · karma {u.karma}
+                                                    </p>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
+
+                                            <div className="flex items-center gap-2.5">
+                                                <span
+                                                    className="px-3 py-1 text-[9px] tracking-[2px] rounded"
+                                                    style={{ border: `1px solid ${ROLE_COLOR[u.role]}40`, color: ROLE_COLOR[u.role], fontFamily: "'Orbitron', monospace" }}
+                                                >
+                                                    {u.role.toUpperCase()}
+                                                </span>
+
+                                                {u.role === "cr" && (
+                                                    <button
+                                                        onClick={() => revokeRole(u._id)}
+                                                        className="px-3 py-1 text-[9px] tracking-[1px] rounded cursor-pointer transition-all duration-150 hover:opacity-80"
+                                                        style={{ background: 'transparent', border: '1px solid rgba(255,68,68,0.3)', color: '#FF4444', fontFamily: "'Share Tech Mono', monospace" }}
+                                                    >
+                                                        REVOKE
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </>
                     )}
+
                 </div>
             </div>
         </>
